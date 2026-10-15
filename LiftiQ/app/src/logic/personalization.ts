@@ -39,7 +39,7 @@ export function getSessionId(){try{const key=`${PERSONALIZATION_STORAGE_KEY}.ses
 export function createActivity(type:ActivityType,pageId:string,metadata?:Record<string,string|number|boolean>,assetId?:string,now=new Date(),sessionId=getSessionId()):ActivityEvent{return{id:makeId('evt'),type,pageId,at:now.toISOString(),sessionId,...(metadata?{metadata}:{}),...(assetId?{assetId}:{})}}
 export function appendActivity(state:PersonalizationState,event:ActivityEvent){
   // Refreshes and repeated route callbacks within five minutes in one tab do not add frequency weight.
-  if((event.type==='asset_viewed'||event.type==='asset_tab_viewed'||event.type==='page_viewed')&&state.events.some(old=>old.type===event.type&&old.pageId===event.pageId&&old.assetId===event.assetId&&old.sessionId===event.sessionId&&Math.abs(Date.parse(event.at)-Date.parse(old.at))<5*60_000))return state
+  if((event.type==='asset_viewed'||event.type==='asset_tab_viewed'||event.type==='page_viewed'||event.type==='filter_applied')&&state.events.some(old=>old.type===event.type&&old.pageId===event.pageId&&old.assetId===event.assetId&&old.sessionId===event.sessionId&&JSON.stringify(old.metadata||{})===JSON.stringify(event.metadata||{})&&Math.abs(Date.parse(event.at)-Date.parse(old.at))<5*60_000))return state
   return {...state,events:[...state.events,event].slice(-2000)}
 }
 
@@ -70,6 +70,11 @@ export function rankPageUsage(events:ActivityEvent[],now=new Date()){
 export function shouldSuggestPersonalizedDefault(events:ActivityEvent[],now=new Date()){
   const meaningful=events.filter(e=>e.type==='home_action'&&ageDays(e.at,now)<=30)
   return new Set(meaningful.map(e=>e.sessionId)).size>=LANDING_RECOMMENDATION_THRESHOLD.homeSessions&&distinctDays(meaningful).length>=LANDING_RECOMMENDATION_THRESHOLD.distinctDays
+}
+export function suggestFrequentFilter(events:ActivityEvent[],savedViews:SavedView[],now=new Date()){
+  const filters=new Map<string,{value:NotificationFilters;events:ActivityEvent[]}>()
+  for(const event of events){if(event.type!=='filter_applied'||event.pageId!=='notifications'||ageDays(event.at,now)>14)continue;const value=validateNotificationFilters(event.metadata),key=JSON.stringify(value);if(!hasActiveFilters(value))continue;const entry=filters.get(key)||{value,events:[]};entry.events.push(event);filters.set(key,entry)}
+  return [...filters.entries()].map(([key,entry])=>({key,filters:entry.value,count:entry.events.length,sessions:new Set(entry.events.map(e=>e.sessionId)).size,lastUsedAt:entry.events.map(e=>e.at).sort().at(-1)||''})).filter(item=>item.count>=3&&item.sessions>=2&&!savedViews.some(view=>JSON.stringify(view.filters)===item.key)).sort((a,b)=>b.lastUsedAt.localeCompare(a.lastUsedAt))[0]||null
 }
 export function validateNotificationFilters(value:unknown):NotificationFilters{
   if(!value||typeof value!=='object')return{...DEFAULT_NOTIFICATION_FILTERS}

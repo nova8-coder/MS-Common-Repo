@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LiftIQ 3.0 · AssetIQ</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#f7f9fc;--card:#fff;--ink:#102a4c;--mut:#5f6f86;--line:#e4eaf2;--pri:#0a7cd8;--pri-d:#0866b3;--pri-t:#e2f0fc;--nav:#0a3585;--red:#e03a3a;--red-t:#fde4e4;--amb:#e8920a;--amb-t:#fff1d0;--grn:#13995a;--grn-t:#d8f3e4;--hl:#eef6fe;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 Inter,system-ui,sans-serif;display:flex}
+button{font:inherit;cursor:pointer;color:inherit}button:focus-visible,a:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+aside{width:200px;background:linear-gradient(180deg,#0b3b90,#0a2f78);color:#fff;display:flex;flex-direction:column;padding:16px 10px;gap:4px;flex:none}
+.logo{display:flex;align-items:center;gap:10px;padding:4px 10px 18px;font-weight:700;font-size:17px;letter-spacing:-.2px}
+.logo i{width:32px;height:32px;border-radius:9px;background:#fff;color:var(--nav);display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:800}
+.logo small{display:block;font-weight:400;font-size:11px;opacity:.7}
+aside button.nav{background:none;border:0;color:#cfe0fb;text-align:left;padding:10px 12px;border-radius:9px;display:flex;align-items:center;gap:10px;font-weight:500}
+aside button.nav:hover{background:rgba(255,255,255,.08)}aside button.nav.on{background:var(--pri);color:#fff}
+.bd{margin-left:auto;background:var(--red);color:#fff;font-size:11px;border-radius:10px;padding:0 7px;font-weight:600}
+main{flex:1;min-width:0;display:flex;flex-direction:column;height:100%}
+header{display:flex;align-items:center;gap:12px;padding:12px 24px;background:var(--card);border-bottom:1px solid var(--line)}
+header b{font-size:16px}header .sp{flex:1}header .tag{color:var(--mut);font-size:12px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--pri);color:#fff;display:grid;place-items:center;font-weight:600}
+#view{flex:1;overflow:auto;padding:22px 24px 40px}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.4px}h2{font-size:16px;margin:0}.sub{color:var(--mut);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.grid{display:grid;gap:16px}.g5{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.kpi{display:flex;gap:14px;align-items:center;cursor:pointer;text-align:left;width:100%}
+.kpi:hover{border-color:var(--pri)}.kpi .n{font-size:28px;font-weight:700;line-height:1}.kpi .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:20px}
+.kpi small{color:var(--mut)}
+.c-r{background:var(--red-t);color:var(--red)}.c-a{background:var(--amb-t);color:var(--amb)}.c-g{background:var(--grn-t);color:var(--grn)}.c-b{background:var(--pri-t);color:var(--pri)}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-weight:600;color:var(--mut);font-size:12px;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}
+tr.row{cursor:pointer}tr.row:hover td,tr.sel td{background:var(--hl)}
+.wrap{overflow-x:auto}
+.chip{display:inline-block;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+.btn{background:var(--pri);color:#fff;border:1px solid var(--pri);border-radius:8px;padding:7px 14px;font-weight:600}
+.btn:hover{background:var(--pri-d)}.btn.o{background:var(--card);color:var(--pri)}.btn.o:hover{background:var(--pri-t)}.btn.s{padding:4px 11px;font-size:13px}
+a.lk{color:var(--pri);cursor:pointer;text-decoration:none;font-weight:500}a.lk:hover{text-decoration:underline}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.crumb{color:var(--pri);margin-bottom:6px;font-size:13px}
+.stats{display:flex;gap:26px;flex-wrap:wrap}.stats div{display:flex;flex-direction:column;font-size:12px;color:var(--mut)}.stats b{font-size:17px;color:var(--ink);margin-top:2px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.tabs button{background:none;border:0;padding:10px 16px;color:var(--mut);font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--pri);border-color:var(--pri)}
+.pills{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}.pills button{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:8px 16px;font-weight:600}
+.pills button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.split{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:16px;align-items:start}
+@media(max-width:980px){.split{grid-template-columns:1fr}}
+.tl{position:relative;padding-left:34px;margin:14px 0}.tl .e{position:relative;padding-bottom:16px}
+.tl .e:before{content:"";position:absolute;left:-23px;top:20px;bottom:-4px;width:2px;background:var(--line)}.tl .e:last-child:before{display:none}
+.tl .e i{position:absolute;left:-34px;top:0;width:24px;height:24px;border-radius:50%;background:var(--red);}
+.tl .e.n i{background:var(--card);border:2px dashed var(--mut)}.tl small{color:var(--mut)}
+.note{background:var(--amb-t);border:1px solid var(--amb);border-radius:12px;padding:14px;margin-top:14px}
+textarea,input,select{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.bar{height:16px;background:var(--line);border-radius:8px;position:relative;overflow:hidden}.bar i{display:block;height:100%;background:var(--pri)}
+.kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line)}.kv:last-child{border:0}.kv span{color:var(--mut)}
+.mt{display:flex;justify-content:space-between;align-items:center;position:relative;margin:26px 0 10px;overflow-x:auto;gap:12px}
+.mt:before{content:"";position:absolute;left:5%;right:5%;top:22px;height:2px;background:var(--line)}
+.mt div{position:relative;text-align:center;flex:1;min-width:110px;font-size:12px}.mt i{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;font-style:normal;font-size:18px;position:relative}
+.ni{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}.ni:last-child{border:0}
+.ni .l{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none}.ni .b{flex:1;min-width:0}.ni .m{color:var(--mut);font-size:12px;margin-top:3px}.ni .a{display:flex;gap:6px;flex-wrap:wrap}
+.unr{background:var(--hl);margin:0 -16px;padding:14px 16px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none}.toast.show{opacity:1}
+@media(max-width:700px){aside{width:64px}aside .t,.logo span{display:none}aside button.nav{justify-content:center}.bd{position:absolute;margin:-18px 0 0 18px}#view{padding:16px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<aside>
+ <div class="logo"><i>IQ</i><span>LiftIQ<small>3.0 · ASSETIQ</small></span></div>
+ <button class="nav" data-v="home"><span>🏠</span><span class="t">Home</span></button>
+ <button class="nav" data-v="stations"><span>📍</span><span class="t">Lift Stations</span></button>
+ <button class="nav" data-v="alarms"><span>⚠️</span><span class="t">Alarms</span><span class="bd t">1</span></button>
+ <button class="nav" data-v="notifs"><span>🔔</span><span class="t">Notifications</span></button>
+</aside>
+<main>
+ <header><b>ASSETIQ · LiftIQ <small style="font-weight:400;color:var(--mut)">3.0</small></b><span class="sp"></span><span class="tag">Local prototype · no live device connection</span><div><b style="font-size:13px">Venky Karuppanan</b><div class="tag">UTC+05:30 Calcutta</div></div><div class="av">V</div></header>
+ <div id="view"></div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),V=$('#view');
+const S={v:'home',tab:'alarms',pump:1,alarm:0,nf:'All',nr:{a1:0,a2:0,a3:0,a4:0,a5:0,a6:0,a7:0},done:false};
+const chip=(t,c)=>`<span class="chip c-${c}">${t}</span>`;
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)};
+function go(v,x={}){Object.assign(S,{v},x);render();V.scrollTop=0}
+document.querySelectorAll('aside .nav').forEach(b=>b.onclick=()=>{b.dataset.v=='alarms'?go('station',{tab:'alarms'}):go(b.dataset.v)});
+
+const stations=[
+['NOVA_02','10/13/2026 04:08 PM','Scheduled Message','4.00 in','[0]','ok','Hosur, Tamil Nadu'],
+['NOVA_TEST','10/12/2026 04:46 PM','Scheduled Message','4.00 in','[0]','rev',''],
+['NOVA02','10/12/2026 01:07 PM','Scheduled Message','30.59 in','[0]','rev','Unusual change'],
+['NOVA_LiftIQ_01','10/11/2026 04:45 AM','High Level Alarm','41.44 in','[1]','bad',''],
+['LiftIQ-Asset-001','10/10/2026 08:29 PM','Pump 2 On','4.26 in','[0]','rev',''],
+['OCT_T1_NP_LIQ-1','10/08/2026 06:50 PM','Scheduled Message','116.91 in','[0]','ok',''],
+['NOVA03','10/07/2026 03:15 PM','Scheduled Message','4.00 in','[0]','ok',''],
+['NOVA01','10/07/2026 01:29 PM','High Level Alarm Cleared','120.00 in','[0]','ok',''],
+['Lifitq-1','09/29/2026 04:41 AM','Pump 1 Fault Alarm Cleared','-','[0]','stale',''],
+['TEST-ASSET','01/31/2023 04:39 AM','High Level Alarm','41.44 in','[0]','ok','']];
+const q={ok:['Good','g'],rev:['Needs review','a'],bad:['Out of range','r'],stale:['Stale data','b']};
+
+const views={
+home(){const pr=[['LiftIQ-Asset-001','Tenkasi Zone','High Water Level','r','Today 10:15 AM','Viewed 8 times'],['NOVA_02','Hosur Zone','Pump 1 Fault','a','Today 09:42 AM','Viewed 5 times'],['NOVA_03','Chennai Zone','Normal','g','Yesterday 05:20 PM','Viewed 4 times'],['Lift Station A','Bangalore Zone','No Data','b','Oct 13, 11:32 AM','Viewed 3 times']];
+return `<h1 style="color:var(--pri);font-size:18px;font-weight:500">Good morning, Venky!</h1><h1>Personalized Home</h1><p class="sub">Your frequently used assets, recent activity and suggested pages.</p>
+<div class="grid g5" style="margin-bottom:16px">
+<button class="card kpi" onclick="go('station',{tab:'alarms'})"><span class="ic c-r">🚨</span><span><span class="n" style="color:var(--red)">3</span><br>Active Alarms<br><small>Needs attention</small></span></button>
+<button class="card kpi" onclick="go('stations')"><span class="ic c-a">⏱</span><span><span class="n" style="color:var(--amb)">2</span><br>Stations Not Reporting<br><small>Check connectivity</small></span></button>
+<button class="card kpi" onclick="go('stations')"><span class="ic c-g">⛽</span><span><span class="n" style="color:var(--grn)">12</span><br>Stations Operating<br><small>Normal</small></span></button>
+<button class="card kpi" onclick="go('station',{tab:'maint'})"><span class="ic c-b">📋</span><span><span class="n" style="color:var(--pri)">5</span><br>Maintenance Due<br><small>Next 30 days</small></span></button>
+<button class="card kpi" onclick="go('stations')"><span class="ic c-b">📈</span><span><span class="n" style="color:var(--pri)">8</span><br>Assigned Stations<br><small>Your scope</small></span></button></div>
+<div class="grid g2"><div class="card"><div class="top" style="margin:0"><h2>Your Priority Assets</h2><a class="lk" onclick="go('stations')">View all</a></div><div class="wrap"><table><tr><th>Station</th><th>Status</th><th>Last viewed</th><th></th></tr>
+${pr.map(r=>`<tr><td><b>${r[0]}</b><br><small style="color:var(--mut)">${r[1]}</small></td><td>${chip(r[2],r[3])}</td><td>${r[4]}<br><small style="color:var(--mut)">${r[5]}</small></td><td><button class="btn s" onclick="go('station',{tab:'${r[0]=='NOVA_02'?'alarms':'alarms'}'})">Open</button></td></tr>`).join('')}</table></div></div>
+<div class="card"><h2>Recent Activity</h2><table><tr><th>Time</th><th>Action</th><th>Details</th></tr>
+<tr><td>10:15 AM</td><td>Viewed asset</td><td><a class="lk" onclick="go('station',{tab:'alarms'})">LiftIQ-Asset-001</a></td></tr>
+<tr><td>09:58 AM</td><td>Viewed trends</td><td><a class="lk" onclick="go('station',{tab:'pump'})">NOVA_02</a> · Level Trends</td></tr>
+<tr><td>09:42 AM</td><td>Viewed alarms</td><td><a class="lk" onclick="go('station',{tab:'alarms'})">NOVA_02</a> · Active</td></tr>
+<tr><td>Oct 13, 04:18 PM</td><td>Applied filter</td><td><a class="lk" onclick="go('notifs')">Notifications</a> · Critical</td></tr></table></div>
+<div class="card"><h2>Your Saved Views</h2><table><tr><th>View</th><th>Filter</th><th></th></tr>
+<tr><td>⭐ My Active Alarms</td><td>${chip('Status: Active','b')} ${chip('Severity: Critical','b')}</td><td><button class="btn s" onclick="go('notifs')">Open</button></td></tr>
+<tr><td>⭐ NOVA_02 Trends</td><td>${chip('Last 7 days','b')}</td><td><button class="btn s" onclick="go('station',{tab:'pump'})">Open</button></td></tr>
+<tr><td>⭐ Maintenance Due</td><td>${chip('Due in 30 days','b')}</td><td><button class="btn s" onclick="go('station',{tab:'maint'})">Open</button></td></tr></table></div>
+<div class="card"><h2 style="margin-bottom:8px">Suggested for You</h2>
+${[['📈','Continue checking Level Trends','You viewed trends for NOVA_02 in the last 3 days.','Open Trends','pump'],['🔔','Review active alarms at NOVA_02','2 active alarms in a station you often view.','Open Alarms','alarms'],['📋','Check maintenance schedule','5 stations have maintenance due in 30 days.','View Maintenance','maint']].map(s=>`<div class="ni"><span class="l c-b">${s[0]}</span><div class="b"><b>${s[1]}</b><div class="m">${s[2]}</div></div><button class="btn s" onclick="go('station',{tab:'${s[4]}'})">${s[3]}</button></div>`).join('')}</div></div>`},
+
+stations(){return `<div class="top"><div><h1>Lift Stations</h1><p class="sub" style="margin:0">Total lift stations: 23</p></div><div class="pills" style="margin:0">${chip('Lift stations with alarms: 1','r')}${chip('Sensors need review: 3','a')}</div></div>
+<div class="card"><div class="wrap"><table><tr><th>Lift station</th><th>Last event</th><th>Reason</th><th>Level 1</th><th>Alarms</th><th>Sensor quality</th></tr>
+${stations.map((s,i)=>`<tr class="row" onclick="go('station',{tab:'alarms'})"><td><a class="lk">${s[0]}</a></td><td>${s[1]}</td><td>${s[2]}</td><td>${s[3]}${s[6]=='Unusual change'?' ⚠️':''}</td><td>${s[4]}</td><td>${chip(q[s[5]][0],q[s[5]][1])}</td></tr>`).join('')}</table></div></div>
+<p class="sub" style="margin-top:12px">Select a station to open its alarms, pump health and maintenance.</p>`},
+
+station(){
+const hdr=`<div class="crumb"><a class="lk" onclick="go('stations')">← All Lift Stations</a></div>
+<div class="card top" style="align-items:center"><div><h1 style="margin:0">NOVA_02 <span style="font-size:13px;vertical-align:middle">${chip('Online','g')}</span></h1><div style="color:var(--mut)">Hosur, Tamil Nadu · Last reported 10/13/2026 04:08 PM</div></div>
+<div class="stats"><div>Station health<b style="color:var(--grn)">Good</b></div><div>Pumps<b>3</b></div><div>Active alarms<b style="color:var(--red)">${S.done?1:2}</b></div><div>Maintenance due<b style="color:var(--amb)">1</b></div></div></div>
+<div class="tabs">${[['alarms','Alarms'],['pump','Pump Health'],['maint','Maintenance']].map(t=>`<button class="${S.tab==t[0]?'on':''}" onclick="go('station',{tab:'${t[0]}'})">${t[1]}</button>`).join('')}</div>`;
+return hdr+tabs[S.tab]()},
+notifs(){const L=[['a1','A','Asset change','Asset owner changed','NOVA_02 ownership moved from Operations South to Water Services Group.','Oct 15, 8:35 AM','b'],['a2','M','Maintenance','Pump 1 maintenance due soon','Routine service is scheduled in five days.','Oct 15, 8:10 AM','a','maint'],['a3','S','System','User access changed','An Operator role was assigned for the NOVA_02 station group.','Oct 14, 4:05 PM','b'],['a4','A','Asset change','Asset details updated','Service contact and station notes were updated on LiftIQ-Asset-001.','Oct 13, 11:20 AM','b'],['a5','M','Maintenance','Maintenance completed','Inspection for NOVA_02 Pump 2 was marked complete.','Oct 12, 2:15 PM','g','maint'],['a6','!','Alarm','High Water Level · repeat','Repeat alarm within the same unresolved lifecycle (LC-1042). Web push failed.','Oct 12, 12:16 PM','r','alarms'],['a7','!','Alarm','Pump 1 Fault','Pump 1 reported a fault state (LC-1040).','Oct 10, 2:34 PM','r','alarms']];
+const unread=k=>S.nr[k]===undefined?0:S.nr[k];
+const init={a6:1,a7:1};
+L.forEach(l=>{if(S.nr[l.length&&l[0]]===0&&init[l[0]]&&!S._i){}});
+if(!S._i){S._i=1;S.nr.a6=1;S.nr.a7=1;S.nr.a1=S.nr.a2=S.nr.a3=S.nr.a4=S.nr.a5=0}
+const F=['All','Alarm','Maintenance','Asset change','System'];
+const rows=L.filter(l=>S.nf=='All'||l[2]==S.nf);
+return `<h1>Notifications</h1><p class="sub">Alarm, maintenance and system updates across your stations.</p>
+<div class="pills">${F.map(f=>`<button class="${S.nf==f?'on':''}" onclick="S.nf='${f}';render()">${f}</button>`).join('')}</div>
+<div class="card">${rows.map(l=>`<div class="ni ${S.nr[l[0]]?'unr':''}"><span class="l c-${l[6]}">${l[1]}</span><div class="b"><div>${chip(l[2],l[6])} <b>${l[3]}</b> ${S.nr[l[0]]?chip('Unread','b'):''}</div><div style="margin-top:4px">${l[4]}</div><div class="m">NOVA_02 · ${l[5]}</div></div><div class="a">${l[7]?`<button class="btn o s" onclick="go('station',{tab:'${l[7]}'})">Details</button>`:''}<button class="btn o s" onclick="S.nr.${l[0]}=${S.nr[l[0]]?0:1};render()">Mark ${S.nr[l[0]]?'read':'unread'}</button></div></div>`).join('')||'<p class="sub">Nothing here for this filter.</p>'}</div>`},
+alarms(){return views.station()}
+};
+
+const AL=[['12/10/2026 10:04 AM','High Level','Wet Well','High','Active','2h 12m','-'],['11/10/2026 08:18 PM','Low Level','Wet Well','Medium','Completed','1h 24m','Auto (Status)'],['10/10/2026 02:34 PM','Pump 1 Fault','Pump 1','High','Completed','48m','Device'],['09/10/2026 11:16 AM','High Level','Wet Well','High','Completed','36m','Auto (Status)'],['08/10/2026 06:20 AM','Pump 2 Current Low','Pump 2','Medium','Stale','1d 4h','-'],['07/10/2026 09:42 PM','High Level','Wet Well','High','Completed','22m','Manual'],['06/10/2026 04:18 PM','Generator Fault','Generator','High','Completed','3h 52m','Device']];
+const sv={High:'r',Medium:'a',Low:'b'},st={Active:'r',Completed:'g',Stale:'a'};
+const tabs={
+alarms(){const a=AL.map((r,i)=>i==0&&S.done?['12/10/2026 10:04 AM',...r.slice(1,4),'Completed','2h 12m','Manual']:r);const r=a[S.alarm];
+return `<div class="split"><div class="card"><div class="wrap"><table><tr><th>Start time</th><th>Type</th><th>Component</th><th>Severity</th><th>Status</th><th>Duration</th><th>Resolution</th></tr>
+${a.map((x,i)=>`<tr class="row ${i==S.alarm?'sel':''}" onclick="S.alarm=${i};render()"><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td><td>${chip(x[3],sv[x[3]])}</td><td>${chip(x[4],st[x[4]])}</td><td>${x[5]}</td><td>${x[6]}</td></tr>`).join('')}</table></div></div>
+<div class="card"><div style="display:flex;gap:12px;align-items:center"><span class="ic c-r" style="width:44px;height:44px;border-radius:50%;display:grid;place-items:center">🔔</span><div><h2>${r[1]} ${chip(r[4],st[r[4]])}</h2><small style="color:var(--mut)">NOVA_02 · ${r[2]} · Severity ${r[3]}</small></div></div>
+<h2 style="margin-top:18px">Lifecycle timeline</h2><div class="tl"><div class="e"><i></i><small>${r[0]}</small><div><b>Alarm generated</b> — level reached 70.2 in (threshold 70 in).</div></div>
+${S.alarm==0?`<div class="e"><i></i><small>12/10/2026 10:08 AM</small><div><b>Repeat alarm</b> — level still above 70 (71.4 in).</div></div><div class="e"><i></i><small>12/10/2026 11:20 AM</small><div><b>Repeat alarm</b> — level 71.8 in.</div></div>`:''}
+<div class="e n"><i></i><b>${r[4]=='Completed'?'Cleared':'No clear event received yet'}</b><div><small>${r[4]=='Completed'?'Resolution: '+r[6]:'It will be marked stale if no new evidence arrives.'}</small></div></div></div>
+${S.alarm==0&&!S.done?`<div class="note"><b>Completion</b><p style="margin:6px 0">A recent status report shows the condition is normal, but the device sent no clear message.</p>
+<label>Evidence time</label><input value="12/10/2026 12:16:19 PM" readonly style="margin:4px 0 10px"><label>Reason / notes</label><textarea id="nt" rows="3" style="margin-top:4px">Wet well level returned to normal based on status report (71.1 in). No clear alarm message received from device.</textarea>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn o" onclick="toast('Cancelled')">Cancel</button><button class="btn" onclick="S.done=true;render();toast('Alarm marked as completed')">Mark as completed</button></div></div>`:''}</div></div>`},
+pump(){const p=S.pump,pk=[520,540,500][p-1],cu=[480,455,430][p-1],rl=['Lead','Lag','Lag-Lag'];
+const d=[410,380,430,375,380,400,440,395,400,370,425,415,450].map((v,i)=>v+(p-1)*-25);
+const pts=d.map((v,i)=>[40+i*(600/12),170-v/700*150]);
+return `<div class="top" style="margin:0 0 12px"><div><h1 style="font-size:20px">Pump Health</h1><p class="sub" style="margin:0">Monitor pump performance and deviation from peak capacity · Oct 12, 2026</p></div></div>
+<div class="pills">${[1,2,3].map(n=>`<button class="${p==n?'on':''}" onclick="S.pump=${n};render()">Pump ${n} · ${rl[n-1]}</button>`).join('')}</div>
+<div class="card stats" style="margin-bottom:16px;gap:40px"><div><b style="font-size:20px">Pump ${p}</b>${chip('Healthy','g')}</div><div>Peak capacity<b>${pk} gal/h</b></div><div>Current capacity<b>${cu} gal/h</b></div><div>Deviation<b style="color:var(--red)">${Math.round((cu-pk)/pk*100)}%</b></div><div>Run hours<b>${(4.2-(p-1)*.7).toFixed(1)} hrs</b></div></div>
+<div class="split"><div class="card"><h2>Capacity trend (Pump ${p})</h2><svg viewBox="0 0 660 200" style="width:100%"><g stroke="var(--line)">${[0,1,2,3].map(i=>`<line x1="40" x2="640" y1="${20+i*50}" y2="${20+i*50}"/>`).join('')}</g>
+<line x1="40" x2="640" y1="${170-pk/700*150}" y2="${170-pk/700*150}" stroke="var(--pri)" stroke-dasharray="6 5"/>
+<polygon points="40,170 ${pts.map(x=>x.join(',')).join(' ')} 640,170" fill="var(--pri)" opacity=".12"/><polyline points="${pts.map(x=>x.join(',')).join(' ')}" fill="none" stroke="var(--pri)" stroke-width="2.5"/>
+${pts.map(x=>`<circle cx="${x[0]}" cy="${x[1]}" r="4" fill="var(--card)" stroke="var(--pri)" stroke-width="2"/>`).join('')}
+<g fill="var(--mut)" font-size="11"><text x="40" y="192">Oct 01</text><text x="320" y="192">Oct 07</text><text x="600" y="192">Oct 12</text><text x="4" y="24">700</text><text x="4" y="174">0</text></g></svg><small style="color:var(--mut)">Dashed line: peak capacity (${pk} gal/h)</small></div>
+<div class="card"><h2>Key information</h2>${[['Average capacity',cu+' gal/h'],['Total output',(cu*4.2).toFixed(0)+' gal'],['Peak capacity',pk+' gal/h'],['Last updated','Oct 12, 2026']].map(k=>`<div class="kv"><span>${k[0]}</span><b>${k[1]}</b></div>`).join('')}</div></div>
+<div class="card" style="margin-top:16px"><h2>Current vs peak capacity</h2><div class="bar" style="margin:14px 0 6px"><i style="width:${cu/pk*100}%"></i></div><b>${Math.round(cu/pk*100)}%</b> of peak capacity (${cu} of ${pk} gal/h)</div>`},
+maint(){const p=S.pump;
+return `<div class="pills">${[1,2,3].map(n=>`<button class="${p==n?'on':''}" onclick="S.pump=${n};render()">Pump ${n}</button>`).join('')}</div>
+<div class="split"><div class="card"><h2>Pump ${p} maintenance history and schedule</h2>
+<div class="mt"><div><i class="c-b">📋</i><b>12/01/2024</b><br>Installed</div><div><i class="c-g">✓</i><b>12/04/2026</b><br>Routine service<br><small style="color:var(--grn)">20 days before due</small></div><div><i class="c-g">✓</i><b>10/07/2026</b><br>Inspection<br><small style="color:var(--grn)">5 days before due</small></div><div><i class="c-a">⏱</i><b>17/10/2026</b><br>Routine service<br><small style="color:var(--red)">Due in 5 days</small></div><div><i class="c-b">○</i><b>22/04/2027</b><br>Inspection<br><small>Upcoming</small></div></div></div>
+<div class="card"><h2 style="margin-bottom:6px">Next maintenance ${chip('Due in 5 days','a')}</h2>${[['Type','Routine service'],['Scheduled','17/10/2026'],['Interval','180 days'],['Priority','Medium'],['Assigned to','-']].map(k=>`<div class="kv"><span>${k[0]}</span><b>${k[1]}</b></div>`).join('')}</div></div>
+<div class="card" style="margin-top:16px"><h2>Maintenance events</h2><div class="wrap"><table><tr><th>Type</th><th>Due</th><th>Maintained</th><th>Status</th><th>Difference</th><th>Notes</th></tr>
+<tr class="row"><td>Routine service</td><td>17/10/2026</td><td>-</td><td>${chip('Upcoming','a')}</td><td style="color:var(--red)">Due in 5 days</td><td>Periodic service and cleaning</td></tr>
+<tr><td>Inspection</td><td>10/07/2026</td><td>10/07/2026</td><td>${chip('Completed','g')}</td><td style="color:var(--grn)">5 days before due</td><td>Condition check</td></tr>
+<tr><td>Routine service</td><td>02/05/2026</td><td>12/04/2026</td><td>${chip('Completed','g')}</td><td style="color:var(--grn)">20 days before due</td><td>Cleaning, impeller check</td></tr>
+<tr><td>Initial commissioning</td><td>12/01/2024</td><td>12/01/2024</td><td>${chip('Completed','g')}</td><td>-</td><td>Installation and setup</td></tr></table></div></div>`}};
+
+function render(){document.querySelectorAll('aside .nav').forEach(b=>{const v=S.v=='station'?(S.tab=='alarms'&&b.dataset.v=='alarms'?'alarms':'stations'):S.v;b.classList.toggle('on',b.dataset.v==v)});V.innerHTML=views[S.v]()}
+render();
+</script></body></html>
