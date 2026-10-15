@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LiftiQ – NOVA_02 – Alarms</title>
+<style>
+:root{--navy:#0a3d8f;--navy2:#0b2f6b;--blue:#0a7cf0;--bg:#f3f5f8;--line:#dfe4ec;--tx:#1f2a3c;--mu:#5d6b82;--red:#e53935;--redbg:#fde8e7;--amb:#e8a100;--ambbg:#fff4d6;--grn:#1e9e5a;--grnbg:#dcf5e6;--pnl:#fff}
+*{box-sizing:border-box}body{margin:0;font:13px/1.4 "Segoe UI",Roboto,Arial,sans-serif;color:var(--tx);background:var(--bg)}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+#side{position:fixed;left:0;top:0;bottom:0;width:82px;background:linear-gradient(#0b4ba8,#082f6e);color:#fff;text-align:center;padding-top:14px}
+#side div{padding:14px 4px;font-size:11px;opacity:.9}#side b{display:block;font-size:20px;margin-bottom:2px}
+#top{position:fixed;left:82px;right:0;top:0;height:54px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 20px;gap:16px;z-index:5}
+.logo{font-weight:800;font-size:18px;letter-spacing:-.5px;border:2px solid #111;padding:0 6px}.lq{font-size:17px;font-weight:600;color:#2a3550}
+.sp{flex:1}.usr{text-align:right;font-size:12px}.usr b{font-size:13px}
+#main{margin:54px 0 0 82px;transition:margin .2s}
+body.open #main{margin-right:470px}
+.wrap{padding:16px 20px}
+.crumb{color:var(--blue)}.crumb span{color:var(--mu)}
+.hd{display:flex;gap:14px;align-items:center;margin:10px 0 14px}
+.pic{width:86px;height:58px;border-radius:4px;background:linear-gradient(135deg,#7aa6d6,#3f6a99)}
+.hd h1{margin:0;font-size:24px}.hd small{color:var(--mu);font-size:13px}
+.tabs{display:flex;background:#fff;border:1px solid var(--line);margin-bottom:0;overflow:auto}
+.tabs a{padding:11px 16px;color:var(--mu);white-space:nowrap}.tabs a.on{background:var(--blue);color:#fff}
+.sub{display:flex;gap:28px;border-bottom:1px solid var(--line);margin:12px 0}
+.sub a{padding:10px 8px;color:var(--mu)}.sub a.on{color:var(--blue);border-bottom:3px solid var(--blue);font-weight:600}
+.fl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.fl select,.fl input{height:34px;border:1px solid var(--line);border-radius:3px;background:#fff;padding:0 8px}
+.fl input{width:200px}.cnt{margin-left:auto;color:var(--mu)}
+.btn{height:34px;padding:0 14px;border:1px solid var(--blue);color:var(--blue);background:#fff;border-radius:3px;cursor:pointer}
+.btn.p{background:var(--blue);color:#fff}.btn.g{border-color:var(--line);color:var(--tx)}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line)}
+th{background:#f6f8fb;text-align:left;font-weight:600;padding:9px 10px;border:1px solid var(--line)}
+td{padding:11px 10px;border:1px solid var(--line)}
+tbody tr{cursor:pointer}tbody tr:hover{background:#f2f7ff}tbody tr.sel{background:#dcebfc}
+.chip{display:inline-block;padding:1px 8px;border-radius:3px;font-size:12px}
+.High{background:var(--redbg);color:var(--red)}.Medium{background:var(--ambbg);color:#b27c00}.Low{background:var(--grnbg);color:var(--grn)}
+.Active{background:var(--red);color:#fff}.Completed{background:var(--grnbg);color:#15804a}.Stale{background:var(--ambbg);color:#b27c00;border:1px solid #f0cf7a}
+.pg{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:10px;background:#fff;border:1px solid var(--line);border-top:0}
+.pg button{border:0;background:none;cursor:pointer;font-size:15px;padding:2px 8px}.pg button:disabled{opacity:.3;cursor:default}
+.empty{text-align:center;color:var(--mu);padding:30px}
+#panel{position:fixed;top:54px;right:0;bottom:0;width:470px;background:#fff;border-left:1px solid var(--line);overflow:auto;transform:translateX(100%);transition:transform .2s;z-index:6;padding:18px}
+body.open #panel{transform:none}
+.ph{display:flex;gap:12px;align-items:flex-start}.bell{width:54px;height:54px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:24px;border:1px solid}
+.bell.Active{background:var(--redbg);border-color:#f3b5b2;color:var(--red)}.bell.Completed{background:var(--grnbg);border-color:#a5dfbf;color:var(--grn)}.bell.Stale{background:var(--ambbg);border-color:#f0cf7a;color:var(--amb)}
+.ph h2{margin:0;font-size:21px;display:inline}.ph p{margin:4px 0 0;color:var(--mu)}
+.x{margin-left:auto;border:0;background:none;font-size:22px;cursor:pointer;color:var(--mu)}
+.box{border:1px solid var(--line);margin-top:14px}.box>h3{margin:0;padding:10px 12px;font-size:15px;border-bottom:1px solid var(--line)}
+.tl{padding:6px 12px 12px}.ev{display:flex;gap:12px;padding:10px 0;position:relative}
+.ev:not(:last-child):before{content:"";position:absolute;left:13px;top:36px;bottom:-6px;border-left:2px solid #ccd3df}
+.dot{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:13px}
+.k-alarm,.k-repeat{background:var(--red)}.k-clear,.k-norm{background:var(--grn)}.k-detect{background:var(--blue)}.k-stale{background:var(--amb)}.k-open{background:#fff;border:2px dashed #9aa6b8;color:#9aa6b8}
+.ev .t{color:var(--mu);font-size:12px}.ev .ti{font-weight:600}.src{font-size:11px;padding:0 6px;border-radius:3px;background:#eef2f8;color:var(--mu);margin-left:4px;font-weight:400}
+.ev .d{color:var(--mu)}.lk{background:none;border:0;color:var(--blue);cursor:pointer;padding:0;text-decoration:underline}
+.cs{display:grid;grid-template-columns:repeat(3,1fr)}.cs div{padding:10px 12px;border-right:1px solid var(--line)}.cs div:last-child{border:0}.cs small{color:var(--mu);display:block}
+.note{margin-top:14px;padding:12px;border:1px solid #f0cf7a;background:#fffaeb}.note.ok{border-color:#a5dfbf;background:#f2fbf6}
+.note h3{margin:0 0 6px;font-size:15px}.note dl{margin:8px 0 0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}.note dt{color:var(--mu)}.note dd{margin:0}
+.mask{position:fixed;inset:0;background:rgba(10,20,40,.45);display:none;place-items:center;z-index:20}.mask.on{display:grid}
+.mod{background:#fff;border-radius:6px;width:min(440px,92vw);padding:20px}.mod h3{margin:0 0 10px}.mod dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 14px}.mod dt{color:var(--mu)}.mod dd{margin:0}
+@media(max-width:1100px){body.open #main{margin-right:0}#panel{box-shadow:-8px 0 24px rgba(0,0,0,.18)}}
+@media(max-width:800px){#side{display:none}#top,#main{left:0;margin-left:0}#panel{width:100%}}
+</style></head><body>
+<nav id="side" aria-label="Main"><div><b>☰</b></div><div><b>▦</b>Dashboard</div><div><b>⌂</b>Lift Stations</div><div><b>🔔</b>Notifications</div><div><b>▤</b>Reports</div></nav>
+<header id="top"><span class="logo">ASSET<small>IQ</small></span><span class="lq">LiftiQ</span><span class="sp"></span><button class="btn g" id="reset">Reset demo data</button><div class="usr"><b>Venky Karuppanan</b><br>(UTC+05:30) Calcutta</div></header>
+<div id="main"><div class="wrap">
+<div class="crumb">← All Stations / NOVA_02 / <span>Alarms</span></div>
+<div class="hd"><div class="pic"></div><div><h1>NOVA_02</h1><small>Lift Station | Hosur, Tamil Nadu</small></div></div>
+<div class="tabs"><a>Overview</a><a>Visual Twin</a><a>Messages</a><a>Events</a><a class="on">Alarms</a><a>Trends</a><a>Totalizer</a></div>
+<div class="sub"><a class="on">Alarm History</a><a>Active Alarms (<span id="ac">0</span>)</a></div>
+<div class="fl">
+<select id="fR" aria-label="Time range"><option value="7">Last 7 Days</option><option value="30" selected>Last 30 Days</option></select>
+<select id="fT" aria-label="Alarm type"></select><select id="fC" aria-label="Component"></select>
+<select id="fS" aria-label="Lifecycle status"><option value="">All Status</option><option>Active</option><option>Completed</option><option>Stale</option></select>
+<select id="fV" aria-label="Severity"><option value="">All Severity</option><option>High</option><option>Medium</option><option>Low</option></select>
+<input id="q" type="search" placeholder="Search alarms..." aria-label="Search alarms"><span class="cnt" id="cnt"></span></div>
+<table><thead><tr><th>Start Time ↓</th><th>Alarm Type</th><th>Component</th><th>Severity</th><th>Status</th><th>Duration</th><th>Resolution</th><th>Actions</th></tr></thead><tbody id="tb"></tbody></table>
+<div class="pg">Rows per page: <select id="rp"><option>5</option><option selected>10</option></select><button id="pv" aria-label="Previous page">‹</button><b id="pi"></b><button id="nx" aria-label="Next page">›</button></div>
+</div></div>
+<aside id="panel" aria-label="Alarm lifecycle detail"></aside>
+<div class="mask" id="mk"><div class="mod" role="dialog" aria-modal="true" id="md"></div></div>
+<script>
+const NOW="2026-10-15T09:00:00";
+const E=(t,k,src,ti,d,ev)=>({t,k,src,ti,d,ev});
+const HL="High Level uses wet-well level ≥ activation threshold (70 in) and ≤ normalization threshold (68 in). Illustrative values.";
+const mk=()=>[
+{id:"LC-1042",type:"High Level",comp:"Wet Well",sev:"High",st:"Active",s:"2026-10-12T10:04:12",dur:"2h 12m (ongoing)",res:"—",src:"Device alarm",rep:2,last:"2026-10-12T12:16:19",rule:HL,
+ ev:[E("2026-10-12T10:04:12","alarm","Device alarm","Alarm generated","Wet well level reached 70.2 in (threshold 70 in)."),
+ E("2026-10-12T10:08:45","repeat","Device alarm","Repeat activation","Level still above 70 in (71.4 in). Same lifecycle: no normalization evidence in between."),
+ E("2026-10-12T11:20:16","repeat","Device alarm","Repeat activation","Level 71.8 in. Scheduled Status Reports kept showing an active condition and are not listed.")],note:"No clear event received yet. The alarm stays active until a device clear or Status Report normalization evidence arrives; it becomes Stale if reporting stops."},
+{id:"LC-1041",type:"Low Level",comp:"Wet Well",sev:"Medium",st:"Completed",s:"2026-10-11T20:18:00",dur:"1h 24m",res:"Device clear",src:"Device alarm",rep:0,last:"2026-10-11T21:42:00",rule:"Low Level uses its own configured thresholds (illustrative).",
+ ev:[E("2026-10-11T20:18:00","alarm","Device alarm","Alarm generated","Low level activation received."),E("2026-10-11T21:42:00","clear","Device clear","Clear received","Device-generated clear message. Routine Status Reports are not shown.")]},
+{id:"LC-1040",type:"Pump 1 Fault",comp:"Pump 1",sev:"High",st:"Completed",s:"2026-10-10T14:34:00",dur:"48m",res:"Device clear",src:"Device alarm",rep:0,last:"2026-10-10T15:22:00",rule:"Pump fault: recovery follows the supported fault-state semantics of the device (illustrative).",
+ ev:[E("2026-10-10T14:34:00","alarm","Device alarm","Alarm generated","Pump 1 fault activation received."),E("2026-10-10T15:22:00","clear","Device clear","Clear received","Pump 1 fault cleared by device.")]},
+{id:"LC-1039",type:"High Level",comp:"Wet Well",sev:"High",st:"Completed",s:"2026-10-09T11:16:00",dur:"36m",res:"Auto (Status Report)",src:"Device alarm",rep:0,last:"2026-10-09T11:52:00",rule:HL,
+ ev:[E("2026-10-09T11:16:00","alarm","Device alarm","Alarm generated","Wet well level reached 70.6 in."),
+ E("2026-10-09T11:52:00","norm","Telemetry normalization evidence","Normalization evidence","Device clear not received. Status Report shows level back to normal.",{v:"64.2 in (≤ 68 in)",why:"First Status Report that satisfies the High Level normalization condition after activation. Completes the lifecycle automatically."})],
+ auto:true},
+{id:"LC-1038",type:"Pump 2 Current Low",comp:"Pump 2",sev:"Medium",st:"Stale",s:"2026-10-08T06:20:00",dur:"1d 4h (unconfirmed)",res:"—",src:"Device alarm",rep:0,last:"2026-10-08T08:05:00",rule:"Communication staleness is based on the reporting timeout (illustrative: 6 h), not a sensor threshold.",
+ ev:[E("2026-10-08T06:20:00","alarm","Device alarm","Alarm generated","Pump 2 current below configured low limit."),E("2026-10-08T14:05:00","stale","System","Marked Stale","Reporting timeout expired. No recent evidence is available.")],
+ note:"The device stopped reporting after 08:05. Recent evidence is unavailable, so the condition may or may not have continued. No clear time is assumed. A normalizing Status Report or device clear will close it."},
+{id:"LC-1037",type:"High Level",comp:"Wet Well",sev:"High",st:"Completed",s:"2026-10-07T21:42:00",dur:"22m",res:"Auto (Status Report)",src:"System-detected",rep:0,last:"2026-10-07T22:04:00",rule:HL,
+ ev:[E("2026-10-07T21:42:00","detect","System-detected from Status Report","Alarm detected from Status Report","No activation message received. Status Report level exceeded the activation threshold.",{v:"72.5 in (≥ 70 in)",why:"Scheduled Status Report satisfied the High Level activation rule, so the system started the lifecycle."}),
+ E("2026-10-07T22:04:00","norm","Telemetry normalization evidence","Normalization evidence","Status Report shows level back within normal range.",{v:"63.0 in (≤ 68 in)",why:"Satisfies the High Level normalization condition."})],auto:true},
+{id:"LC-1036",type:"Generator Fault",comp:"Generator",sev:"High",st:"Completed",s:"2026-10-06T16:18:00",dur:"3h 52m",res:"Auto (Status Report)",src:"Device alarm",rep:0,last:"2026-10-06T20:10:00",rule:"Generator Fault uses the generator state reported in Status Reports (illustrative; exact semantics to be confirmed).",
+ ev:[E("2026-10-06T16:18:00","alarm","Device alarm","Alarm generated","Generator fault activation received."),E("2026-10-06T20:10:00","norm","Telemetry normalization evidence","Normalization evidence","Clear not received. Status Report reports generator state as normal.",{v:"Generator state: Normal",why:"Reported state no longer indicates a fault, per the generator recovery rule."})],auto:true},
+{id:"LC-1035",type:"High Level",comp:"Wet Well",sev:"High",st:"Completed",s:"2026-10-05T10:20:00",dur:"1h 18m",res:"Device clear",src:"Device alarm",rep:0,last:"2026-10-05T11:38:00",rule:HL,
+ ev:[E("2026-10-05T10:20:00","alarm","Device alarm","New lifecycle started","Level exceeded 70 in again at 71.0 in, after LC-1034 ended at 10:10. A new occurrence, not a repeat."),E("2026-10-05T11:38:00","clear","Device clear","Clear received","Device-generated clear message.")]},
+{id:"LC-1034",type:"High Level",comp:"Wet Well",sev:"High",st:"Completed",s:"2026-10-05T10:00:00",dur:"10m",res:"Auto (Status Report)",src:"Device alarm",rep:0,last:"2026-10-05T10:10:00",rule:HL,
+ ev:[E("2026-10-05T10:00:00","alarm","Device alarm","Alarm generated","Wet well level reached 70.4 in."),E("2026-10-05T10:10:00","norm","Telemetry normalization evidence","Normalization evidence","Level back to normal. This ends the lifecycle; the 10:20 activation starts a new one.",{v:"66.8 in (≤ 68 in)",why:"Reliable evidence of normalization. Later activations are new lifecycles."})],auto:true},
+{id:"LC-1033",type:"Pump 2 Current High",comp:"Pump 2",sev:"High",st:"Completed",s:"2026-10-04T01:28:00",dur:"22m",res:"Auto (Status Report)",src:"Device alarm",rep:0,last:"2026-10-04T01:50:00",rule:"Pump current alarms use the pump's configured current limits and recovery band (illustrative).",
+ ev:[E("2026-10-04T01:28:00","alarm","Device alarm","Alarm generated","Pump 2 current above high limit."),E("2026-10-04T01:50:00","norm","Telemetry normalization evidence","Normalization evidence","Status Report shows current back within limits.",{v:"18.4 A (limit 22 A)",why:"Current is back inside the configured range."})],auto:true},
+{id:"LC-1032",type:"High Level",comp:"Wet Well",sev:"Medium",st:"Completed",s:"2026-10-02T08:14:00",dur:"3h 0m",res:"Auto (Status Report)",src:"Device alarm",rep:1,last:"2026-10-02T11:14:00",rule:HL,
+ ev:[E("2026-10-02T08:14:00","alarm","Device alarm","Alarm generated","Level reached 70.3 in."),E("2026-10-02T08:50:00","repeat","Device alarm","Repeat activation","Level still above threshold. Same lifecycle."),E("2026-10-02T11:14:00","norm","Telemetry normalization evidence","Normalization evidence","Several reports showed an active condition (not listed). This is the first normalized report.",{v:"65.1 in (≤ 68 in)",why:"First report to show normalization after a period of active reports."})],auto:true}
+];
+let D=mk(),sel=null,page=1;
+const $=i=>document.getElementById(i),f=(s,sec)=>{const d=new Date(s),p=n=>String(n).padStart(2,"0");let h=d.getHours(),a=h<12?"AM":"PM";h=h%12||12;return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(h)}:${p(d.getMinutes())}${sec?":"+p(d.getSeconds()):""} ${a}`};
+const ic={alarm:"🔔",repeat:"🔔",clear:"✓",norm:"✓",detect:"📡",stale:"⏱",open:""};
+function opts(id,lab,key){const v=[...new Set(D.map(x=>x[key]))].sort();$(id).innerHTML=`<option value="">${lab}</option>`+v.map(x=>`<option>${x}</option>`).join("")}
+function filt(){const t=$("fT").value,c=$("fC").value,s=$("fS").value,v=$("fV").value,q=$("q").value.toLowerCase(),days=+$("fR").value;
+return D.filter(x=>(!t||x.type==t)&&(!c||x.comp==c)&&(!s||x.st==s)&&(!v||x.sev==v)&&(new Date(NOW)-new Date(x.s))/864e5<=days&&(!q||[x.id,x.type,x.comp,x.res,x.st].join(" ").toLowerCase().includes(q)))}
+function render(){const r=filt(),n=+$("rp").value,pages=Math.max(1,Math.ceil(r.length/n));page=Math.min(page,pages);
+$("tb").innerHTML=r.slice((page-1)*n,page*n).map(x=>`<tr data-id="${x.id}" class="${sel==x.id?"sel":""}" tabindex="0"><td>${f(x.s)}</td><td>${x.type}${x.rep?` <span class="src">${x.rep} repeat${x.rep>1?"s":""}</span>`:""}</td><td>${x.comp}</td><td><span class="chip ${x.sev}">${x.sev}</span></td><td><span class="chip ${x.st}">${x.st}</span></td><td>${x.dur}</td><td>${x.res}</td><td><button class="lk" aria-label="Open ${x.type} lifecycle">›</button></td></tr>`).join("")||`<tr><td colspan="8" class="empty">No alarm lifecycles match these filters.</td></tr>`;
+$("cnt").textContent=`${r.length} alarm lifecycle${r.length==1?"":"s"}`;$("pi").textContent=`Page ${page} of ${pages}`;$("pv").disabled=page<=1;$("nx").disabled=page>=pages;$("ac").textContent=D.filter(x=>x.st=="Active").length}
+function detail(id){sel=id;const x=D.find(y=>y.id==id);document.body.classList.add("open");
+const evs=x.ev.map((e,i)=>`<div class="ev"><div class="dot k-${e.k}">${ic[e.k]}</div><div><div class="t">${f(e.t,1)}</div><div class="ti">${e.ti}<span class="src">${e.src}</span></div><div class="d">${e.d}${e.ev?` <button class="lk" data-ev="${i}">View Evidence</button>`:""}</div></div></div>`).join("");
+const tail=x.st=="Active"?`<div class="ev"><div class="dot k-open"></div><div><div class="ti">No clear event received yet</div><div class="d">${x.note}</div></div></div>`:"";
+let box="";
+if(x.st=="Stale")box=`<div class="note"><h3>Stale: evidence unavailable</h3>${x.note}</div>`;
+else if(x.auto){const e=x.ev.find(e=>e.k=="norm");box=`<div class="note ok"><h3>Completed automatically</h3>The device clear message was not received. The lifecycle was completed from Status Report evidence, so no user action is needed.<dl><dt>Resolution</dt><dd>${x.res}</dd><dt>Evidence time</dt><dd>${f(e.t,1)}</dd><dt>Evidence</dt><dd>${e.ev.v} <button class="lk" data-ev="${x.ev.indexOf(e)}">View Evidence</button></dd></dl></div>`}
+else if(x.st=="Completed")box=`<div class="note ok"><h3>Completed by device</h3>Resolved by a device-generated clear message.</div>`;
+$("panel").innerHTML=`<div class="ph"><div class="bell ${x.st}">🔔</div><div><h2>${x.type}</h2> <span class="chip ${x.st}">${x.st}</span><p>NOVA_02 | ${x.comp} | Severity: ${x.sev}</p><p>${x.id} | Source: ${x.src}</p></div><button class="x" id="cl" aria-label="Close detail panel">×</button></div>
+<p><button class="btn" id="tr">Go to Level Trend ↗</button></p>
+<div class="box"><h3>Lifecycle Timeline</h3><div class="tl">${evs}${tail}</div></div>
+<div class="box"><h3>Current Status</h3><div class="cs"><div><small>Start Time</small>${f(x.s,1)}</div><div><small>Duration</small>${x.dur}</div><div><small>Last Observed</small>${f(x.last,1)}</div></div></div>${box}
+<p style="color:var(--mu);font-size:12px">Recovery rule (illustrative): ${x.rule}</p>`;
+$("cl").onclick=close;$("tr").onclick=()=>modal(`<h3>Go to Level Trend</h3><p>The Level Trend would open centred on <b>${f(x.s,1)}</b> (alarm start) for ${x.comp} on NOVA_02. Placeholder only in this prototype.</p><button class="btn p" id="ok">Close</button>`);
+$("panel").querySelectorAll("[data-ev]").forEach(b=>b.onclick=()=>{const e=x.ev[b.dataset.ev];modal(`<h3>Status Report evidence</h3><dl><dt>Report time</dt><dd>${f(e.t,1)}</dd><dt>Value / state</dt><dd>${e.ev.v}</dd><dt>Source</dt><dd>${e.src}</dd><dt>Why it was used</dt><dd>${e.ev.why}</dd></dl><button class="btn p" id="ok">Close</button>`)});render()}
+function modal(h){$("md").innerHTML=h;$("mk").classList.add("on");$("ok").focus();$("ok").onclick=()=>$("mk").classList.remove("on")}
+function close(){sel=null;document.body.classList.remove("open");render()}
+$("mk").onclick=e=>{if(e.target==$("mk"))$("mk").classList.remove("on")};
+document.onkeydown=e=>{if(e.key=="Escape"){$("mk").classList.contains("on")?$("mk").classList.remove("on"):close()}if(e.key=="Enter"&&e.target.dataset&&e.target.dataset.id)detail(e.target.dataset.id)};
+$("tb").onclick=e=>{const r=e.target.closest("tr[data-id]");if(r)detail(r.dataset.id)};
+["fR","fT","fC","fS","fV","rp"].forEach(i=>$(i).onchange=()=>{page=1;render()});$("q").oninput=()=>{page=1;render()};
+$("pv").onclick=()=>{page--;render()};$("nx").onclick=()=>{page++;render()};
+$("reset").onclick=()=>{D=mk();["fT","fC","fS","fV"].forEach(i=>$(i).value="");$("q").value="";close()};
+opts("fT","All Alarm Types","type");opts("fC","All Components","comp");render();
+</script></body></html>
