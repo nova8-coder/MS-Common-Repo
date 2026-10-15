@@ -23,7 +23,7 @@
         box-sizing: border-box;
       }
       body {
-        margin: 0 0 0 74px;
+        margin: 0 0 0 148px;
         font:
           13px/1.4 Roboto,
           "Segoe UI",
@@ -47,22 +47,28 @@
         left: 0;
         top: 0;
         bottom: 0;
-        width: 74px;
+        width: 148px;
         background: var(--nv);
         color: #fff;
-        text-align: center;
+        text-align: left;
         padding-top: 14px;
         z-index: 4;
       }
       #side div {
-        padding: 12px 2px;
-        font-size: 11px;
+        padding: 12px 16px;
+        font-size: 12px;
+        white-space: nowrap;
       }
       #side b {
-        display: block;
+        display: inline-block;
+        width: 28px;
         font-size: 19px;
+        vertical-align: middle;
       }
       #top {
+        position: sticky;
+        top: 0;
+        z-index: 5;
         background: #fff;
         height: 52px;
         display: flex;
@@ -120,6 +126,7 @@
         background: #fff;
         padding: 0 18px 12px;
       }
+      body.open .page { margin-right: 470px; }
       .back {
         color: var(--bl);
         padding: 12px 0 4px;
@@ -600,6 +607,38 @@
         display: block;
         color: var(--mu);
       }
+      #panel { top: 52px; width: 470px; }
+      .health-title { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin:8px 0 14px; }
+      .health-title h2 { color:#09245e; font-size:25px; font-weight:700; margin:0 0 2px; }
+      .health-pumps { display:flex; gap:4px; margin:12px 0; }
+      .health-pumps .btn { min-width:150px; height:48px; font-size:16px; font-weight:700; }
+      .health-pumps .src { padding:4px 10px; margin-left:8px; background:#e3f1ff; color:#0871d1; }
+      .health-summary { display:grid; grid-template-columns:1.15fr repeat(4,1fr); border:1px solid var(--ln); border-radius:7px; margin-bottom:12px; }
+      .health-summary > div { min-width:0; padding:14px; border-right:1px solid var(--ln); }
+      .health-summary > div:last-child { border:0; }
+      .health-summary small,.health-kv small { display:block; color:var(--mu); margin-bottom:5px; }
+      .health-summary strong { display:block; color:#09245e; font-size:21px; }
+      .health-summary .pump-ident { display:flex; align-items:center; gap:12px; }
+      .pump-mark { width:54px; height:70px; display:grid; place-items:center; color:#079b70; font-size:40px; }
+      .health-grid { display:grid; grid-template-columns:minmax(0,2fr) minmax(260px,.85fr); gap:12px; margin-bottom:12px; }
+      .health-card { border:1px solid var(--ln); border-radius:7px; background:#fff; padding:14px; min-width:0; }
+      .health-card h3 { margin:0 0 4px; color:#09245e; font-size:17px; }
+      .health-card p { margin:0 0 10px; }
+      .health-card svg { display:block; width:100%; height:auto; }
+      .health-kv { display:grid; grid-template-columns:1fr auto; gap:8px 10px; align-items:center; padding:5px 2px; }
+      .health-kv strong { color:#09245e; }
+      .health-compare { display:grid; grid-template-columns:1fr 220px; gap:20px; align-items:center; }
+      .capacity-track { height:24px; border-radius:5px; background:#e5ebf3; overflow:hidden; position:relative; margin:18px 0 8px; }
+      .capacity-fill { height:100%; width:92%; background:linear-gradient(90deg,#2196f3,#1473db); }
+      .capacity-callout { border-radius:8px; padding:14px; background:#f0faf5; color:var(--gn); text-align:center; }
+      .capacity-callout strong { display:block; font-size:28px; }
+      .alarm-wrap { overflow:auto; }
+      .alarm-wrap table { min-width:860px; }
+      .completion { margin-top:12px; border:1px solid #f0cf7a; border-radius:5px; background:#fffaeb; overflow:hidden; }
+      .completion h3 { margin:0; padding:10px 12px; border-bottom:1px solid #f0cf7a; color:#27364d; }
+      .completion .inside { padding:12px; }
+      .completion input,.completion textarea { width:100%; border:1px solid #d6dce5; border-radius:4px; background:#fff; padding:8px; margin:5px 0 10px; }
+      .completion textarea { min-height:72px; resize:vertical; }
       .mask {
         position: fixed;
         inset: 0;
@@ -655,6 +694,11 @@
         .mt {
           overflow: auto;
         }
+        body.open .page { margin-right:0; }
+        #panel { top:0; }
+        .health-summary { grid-template-columns:repeat(2,1fr); }
+        .health-summary > div:nth-child(2n) { border-right:0; }
+        .health-grid,.health-compare { grid-template-columns:1fr; }
       }
     </style>
   </head>
@@ -1173,7 +1217,7 @@
           [
             "Inspection",
             "2026-07-10",
-            "2026-07-05",
+            "2026-07-10",
             "Inspection and condition check",
           ],
           ["Routine Service", "2026-10-17", 0, "Periodic service and cleaning"],
@@ -1417,7 +1461,7 @@ ${sps0(sps)}<rect x="160" y="30" width="170" height="340" fill="#eceff3" stroke=
         const ac = D.filter((x) => S(x) == "Active").length,
           u = (k) => [...new Set(D.map((x) => x[k]))].sort();
         return `<div class="sub"><a class="${A.s != "Active" ? "on" : ""}" data-a="asub" data-s="">Alarm History</a><a class="${A.s == "Active" ? "on" : ""}" data-a="asub" data-s="Active">Active Alarms (${ac})</a></div>
-<div class="fl"><select data-f="ar" aria-label="Time range"><option value="7" ${A.r == 7 ? "selected" : ""}>Last 7 Days</option><option value="30" ${A.r == 30 ? "selected" : ""}>Last 30 Days</option></select>${sl("at", A.t, u("type"), "All Alarm Types")}${sl("ac", A.c, u("comp"), "All Components")}${sl("as", A.s, ["Active", "Completed", "Stale"], "All Status")}${sl("av", A.v, ["High", "Medium", "Low"], "All Severity")}<input data-f="aq" placeholder="Search alarms..." value="${A.q}" aria-label="Search alarms"><span class="r mu" id="cnt"></span></div><div id="tbl">${aTbl()}</div>`;
+<div class="fl"><select data-f="ar" aria-label="Time range"><option value="7" ${A.r == 7 ? "selected" : ""}>Last 7 Days</option><option value="30" ${A.r == 30 ? "selected" : ""}>Last 30 Days</option></select>${sl("at", A.t, u("type"), "All Alarm Types")}${sl("ac", A.c, u("comp"), "All Components")}${sl("as", A.s, ["Active", "Completed", "Stale"], "All Status")}${sl("av", A.v, ["High", "Medium", "Low"], "All Severity")}<input data-f="aq" placeholder="Search alarms..." value="${A.q}" aria-label="Search alarms"><span class="r mu" id="cnt"></span></div><div id="tbl" class="alarm-wrap">${aTbl()}</div>`;
       };
       /* trends */
       function series(a, b) {
@@ -1609,7 +1653,7 @@ ${
         const ev = MN[mp],
           nx = ev.find((e) => !e[2]);
         return `<b>Select Pump</b><div class="tl" style="margin:8px 0 14px">${[1, 2, 3].map((n) => `<button class="btn ${mp == n - 1 ? "p" : ""}" data-a="mpump" data-i="${n - 1}">Pump ${n}</button>`).join("")}</div>
-<div style="display:grid;grid-template-columns:1fr 340px;gap:16px"><div class="card"><div style="padding:12px"><h2 style="color:var(--tx);font-weight:600">Pump ${mp + 1} Maintenance History & Schedule</h2><span class="mu">One timeline for this pump. Hover or select an event for details. ${mp ? "Mock data for this pump." : ""}</span></div>
+<div style="display:grid;grid-template-columns:1fr 340px;gap:16px"><div class="card"><div style="padding:12px"><h2 style="color:var(--tx);font-weight:600">Pump ${mp + 1} Maintenance History & Schedule</h2><span class="mu">Timeline of maintenance events for this pump. Hover or select an event for details. ${mp ? "Mock data for this pump." : ""}</span><div class="tl mu" style="justify-content:flex-end;margin-top:8px;font-size:12px"><span style="color:var(--gn)">● Completed</span><span style="color:var(--am)">● Upcoming</span><span style="color:#9aa3b2">● Future</span></div></div>
 <div class="mt ov">${ev
           .map((e, i) => {
             const s = i == 0 ? "Completed" : mst(e);
@@ -1629,18 +1673,35 @@ ${
       };
       /* pump health */
       let php = 0;
+      function pumpHealthChart(values, peak, pumpNo) {
+        const pts = values.map((v, i) => `${52 + i * 64},${184 - (v / 700) * 165}`).join(" ");
+        const peakY = 184 - (peak / 700) * 165;
+        return `<svg viewBox="0 0 830 245" role="img" aria-label="Capacity trend for Pump ${pumpNo}">
+<g stroke="#e8edf3" stroke-width="1">${[0,100,200,300,400,500,600,700].map(v=>{const y=184-(v/700)*165;return `<line x1="52" y1="${y}" x2="820" y2="${y}"/>`}).join("")}</g>
+<g fill="#526b8d" font-size="12" text-anchor="end">${[0,100,200,300,400,500,600,700].map(v=>`<text x="42" y="${188-(v/700)*165}">${v}</text>`).join("")}</g>
+<line x1="52" y1="${peakY}" x2="820" y2="${peakY}" stroke="#193b7a" stroke-width="2" stroke-dasharray="8 6"/>
+<polyline points="${pts}" fill="none" stroke="#1484ec" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+${values.map((v,i)=>`<circle cx="${52+i*64}" cy="${184-(v/700)*165}" r="4.5" fill="#fff" stroke="#1484ec" stroke-width="2.5"/>`).join("")}
+<g fill="#526b8d" font-size="11" text-anchor="middle">${["Oct 01","Oct 03","Oct 05","Oct 07","Oct 09","Oct 11","Oct 12"].map((d,i)=>`<text x="${52+i*128}" y="215">${d}</text>`).join("")}</g>
+<text x="436" y="242" text-anchor="middle" fill="#526b8d" font-size="12">Capacity (gal/h)</text></svg>`;
+      }
       V.ph = () => {
-        const m = MS[0],
-          i = php,
-          rd = MS.slice(0, 6),
-          an = D.filter((x) => x.comp == "Pump " + (i + 1)),
-          st = stale();
-        return `<div class="tl" style="margin-bottom:12px">${[0, 1, 2].map((n) => `<button class="btn ${php == n ? "p" : ""}" data-a="phs" data-i="${n}">Pump ${n + 1} <span class="src">${ROLE[n]}</span></button>`).join("")}</div>
-${st ? `<div class="warn">Measurements are from the last report (${f(LAST, 1)}), ${ago(now() - LAST)} ago.</div>` : ""}
-<div class="kp"><div><small>Pump ${i + 1} · ${ROLE[i]}</small><b>On</b><small>Auto mode, as last reported</small></div><div><small>Current (measured)</small><b>${m[2 + i * 2]} A</b><small>${f(m[0])}</small></div><div><small>Run Hours (measured)</small><b>${m[3 + i * 2]} hrs</b><small>${f(m[0])}</small></div><div><small>Turn On / Off level</small><b>${SP[i].on} / ${SP[i].off} in</b><small>Setpoints from the Visual Twin</small></div></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="card"><h3>Calculated metrics</h3><div style="padding:12px"><b>Unavailable</b><p class="mu">Capacity, peak capacity, deviation and health score are not shown. They need per-pump flow data and validated calculation rules that are not part of the supplied data.</p></div></div>
-<div class="card"><h3>Alarms (last 30 days)</h3><div style="padding:12px">${an.length ? an.map((x) => `<div>${f(x.s)} ${x.type} <span class="ch ${S(x)}">${S(x)}</span></div>`).join("") : "None"}<p><button class="lk" data-a="phal" data-c="Pump ${i + 1}">View in Alarms</button></p></div></div></div>
-<h3>Recent reports (measured)</h3><table><thead><tr><th>Report time</th><th>Current (A)</th><th>Run Hours</th></tr></thead><tbody>${rd.map((x) => `<tr><td>${f(x[0], 1)}</td><td>${x[2 + i * 2]}</td><td>${x[3 + i * 2]}</td></tr>`).join("")}</tbody></table><p><button class="lk" data-a="tab" data-t="trd">View Pump Run Hours trend</button></p>`;
+        const m = MS[0], i = php, st = stale();
+        const stats = [
+          { peak:520, current:480, dev:"-8%", hours:"4.2", total:"2,016", series:[410,380,420,375,378,398,430,395,400,378,427,414,448] },
+          { peak:465, current:421, dev:"-9%", hours:"3.8", total:"1,684", series:[352,376,388,360,402,390,411,384,416,396,405,410,421] },
+          { peak:410, current:386, dev:"-6%", hours:"2.9", total:"1,328", series:[320,344,350,332,361,370,352,378,369,380,371,394,386] },
+        ][i];
+        const an = D.filter((x) => x.comp == "Pump " + (i + 1));
+        return `<div class="health-title"><div><h2>Pump Health</h2><span class="mu">Monitor pump performance, water output and deviation from peak capacity.</span></div><button class="btn o">▣ &nbsp; Yesterday (Oct 12, 2026)　⌄</button></div>
+<div class="health-pumps">${[0,1,2].map(n=>`<button class="btn ${i==n?"p":""}" data-a="phs" data-i="${n}">⚙ &nbsp; Pump ${n+1} <span class="src">${ROLE[n]}</span></button>`).join("")}</div>
+${st ? `<div class="warn">Measurements are from the last report (${f(LAST,1)}), ${ago(now()-LAST)} ago.</div>` : ""}
+<section class="health-summary"><div class="pump-ident"><span class="pump-mark"><svg viewBox="0 0 54 70" aria-hidden="true"><path d="M20 4h14v8h-3v6h8v8h6v25h-6v8H15v-8H9V26h6v-8h8v-6h-3z" fill="#079b70"/><circle cx="27" cy="37" r="11" fill="#61d6ae"/><circle cx="27" cy="37" r="5" fill="#e8fff6"/><path d="M18 59v7m18-7v7M21 4h12" stroke="#087f5b" stroke-width="3" stroke-linecap="round"/></svg></span><div><h2 style="margin:0;color:#09245e">Pump ${i+1}</h2><b style="color:var(--gn)">● Healthy</b><div class="mu">Running normally.</div></div></div>
+<div><small>Peak Capacity</small><strong>${stats.peak} gal/h</strong><span class="mu">Highest achieved</span></div><div><small>Current Capacity</small><strong>${stats.current} gal/h</strong><span class="mu">Based on Oct 12, 2026</span></div><div><small>Deviation</small><strong style="color:var(--rd)">↓ ${stats.dev}</strong><span class="mu">vs peak capacity</span></div><div><small>Run Hours (Oct 12)</small><strong>${stats.hours} hrs</strong><span class="mu">Daily total</span></div></section>
+<div class="health-grid"><section class="health-card"><div class="tl" style="justify-content:space-between"><div><h3>Capacity Trend (Pump ${i+1})</h3><p class="mu">Daily average capacity with peak capacity (highest achieved).</p></div><span class="mu">🔵 Daily Capacity　 ┄ Peak Capacity (${stats.peak} gal/h)</span></div>${pumpHealthChart(stats.series,stats.peak,i+1)}</section>
+<section class="health-card"><h3>▣ Key Information (Oct 12, 2026)</h3><div class="health-kv"><span>💧　Average Capacity</span><strong>${stats.current} gal/h</strong><span>💧　Total Output</span><strong>${stats.total} gal</strong><span>◷　Run Hours</span><strong>${stats.hours} hrs</strong><span>⌁　Peak Capacity (Highest)</span><strong>${stats.peak} gal/h</strong><span style="color:var(--rd)">↓　Deviation</span><strong style="color:var(--rd)">${stats.dev}</strong><span>▣　Last Updated</span><strong>Oct 12, 2026</strong></div><button class="btn o" data-a="tab" data-t="trd" style="width:100%;margin-top:8px">▥ &nbsp; View Pump Run Hours Trend　›</button></section></div>
+<section class="health-card"><h3>Current vs Peak Capacity (Pump ${i+1})</h3><p class="mu">Visual comparison of current capacity with the highest achieved capacity.</p><div class="health-compare"><div><div class="tl" style="justify-content:space-between"><b>${stats.current} gal/h</b><b>${stats.peak} gal/h</b></div><div class="capacity-track"><div class="capacity-fill" style="width:${Math.round(stats.current/stats.peak*100)}%"></div></div></div><div class="capacity-callout">Current capacity is <strong>${Math.round(stats.current/stats.peak*100)}%</strong> of peak capacity</div></div></section>
+<div class="health-grid" style="margin-top:12px"><section class="health-card"><h3>Pump ${i+1} Status & Setpoints</h3><div class="health-kv"><span>Run state</span><strong>On</strong><span>Mode</span><strong>Auto</strong><span>Turn On / Off Level</span><strong>${SP[i].on} / ${SP[i].off} in</strong></div></section><section class="health-card"><h3>Related Alarms</h3>${an.length?an.map(x=>`<div style="padding:5px 0">${x.type} <span class="ch ${S(x)}">${S(x)}</span></div>`).join(""):"No pump alarms in the selected period."}<p><button class="lk" data-a="phal" data-c="Pump ${i+1}">View in Alarms →</button></p></section></div>`;
       };
       V.cfg = () => {
         const ok = CF == 0,
@@ -1686,8 +1747,12 @@ ${st ? `<div class="warn">Measurements are from the last report (${f(LAST, 1)}),
             : "";
         let box = "";
         const ne = x.ev.find((e) => e.k == "norm");
-        if (s == "Stale")
+        if (s == "Active")
+          box = `<div class="completion"><h3>Completion</h3><div class="inside"><p style="margin:0 0 10px">A recent Status Report indicates the condition is normalized, but no clear alarm message has been received from the device.</p><label>Evidence Time (from Status Report) *<input id="complete-time" type="datetime-local" value="${x.last.slice(0, 16)}" required></label><label>Reason / Notes *<textarea id="complete-note" maxlength="500" required>Wet well level returned to normal based on Status Report. No clear alarm message received from device.</textarea></label><div class="tl" style="justify-content:flex-end"><button class="btn" data-a="close">Cancel</button><button class="btn p" data-a="complete" data-id="${x.id}">✓ &nbsp; Mark as Completed</button></div></div></div>`;
+        else if (s == "Stale")
           box = `<div class="warn"><b>Stale: evidence unavailable</b><br>${x.note || "The device stopped reporting after " + f(x.last, 1) + ". The condition may or may not have continued, so no clear time is assumed."}</div>`;
+        else if (x.manual)
+          box = `<div class="ok"><b>Marked completed</b><br>Completed manually from Status Report evidence.<dl class="dl" style="margin:8px 0 0"><dt>Resolution</dt><dd>${x.res}</dd><dt>Evidence time</dt><dd>${f(x.last, 1)}</dd></dl></div>`;
         else if (x.auto)
           box = `<div class="ok"><b>Completed automatically</b><br>The device clear message was not received. The lifecycle was completed from Status Report evidence, so no user action is needed.<dl class="dl" style="margin:8px 0 0"><dt>Resolution</dt><dd>${x.res}</dd><dt>Evidence time</dt><dd>${f(ne.t, 1)}</dd><dt>Evidence</dt><dd>${ne.ev.v} <button class="lk" data-a="ev" data-i="${x.ev.indexOf(ne)}">View Evidence</button></dd></dl></div>`;
         else if (s == "Completed")
@@ -1730,6 +1795,21 @@ ${/Level/.test(x.type) ? `<p><button class="btn o" data-a="trend" data-id="${x.i
           d = b.dataset;
         if (a == "tab") go(d.t);
         else if (a == "row") detail(d.id);
+        else if (a == "complete") {
+          const x = D.find((y) => y.id == d.id),
+            t = $("#complete-time").value,
+            note = $("#complete-note").value.trim();
+          if (!t || !note) { toast("Enter the evidence time and notes"); return; }
+          x.st = "Completed";
+          x.manual = true;
+          x.res = "Manual (Status Report)";
+          x.last = new Date(t).toISOString().slice(0, 19);
+          x.dur = ago(new Date(x.last) - new Date(x.s));
+          x.ev.push(E(x.last, "norm", "Status Report (manual completion)", "Marked as completed", note, {v:"Normalized condition",why:note}));
+          detail(x.id);
+          shell();
+          toast("Alarm marked as completed");
+        }
         else if (a == "close") closeP();
         else if (a == "asub") {
           A.s = d.s;
