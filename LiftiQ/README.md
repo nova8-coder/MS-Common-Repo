@@ -17,7 +17,7 @@ Create a production build with `npm run build` and preview it with `npm run prev
 - `src/data/` contains typed illustrative station, pump, alarm, notification, and preference data.
 - `src/logic/alarmLifecycle.ts` contains lifecycle event handling and manual evidence completion rules.
 - `src/components/` contains shared UI components and tokens.
-- `src/pages/` contains the dashboard, station, alarm, and notification views.
+- `src/pages/` contains the dashboard, station, global alarm, notification, and Events & History views.
 
 All interactions are local to this prototype. It has no backend, does not send notifications, and does not control real devices. Mock values are identified in the UI where the source material is incomplete.
 
@@ -41,5 +41,17 @@ The page records local time-to-open-a-station from Dashboard and Personalized Ho
 - A product-approved landing recommendation threshold and task-efficiency evaluation using real workflow completion outcomes.
 
 No backend endpoints or database migrations were added because this repository contains no backend/authentication integration to extend.
+
+## Events & History
+
+The sidebar's **Events & History** workspace has five distinct views: Overview, Operational History, Measurements & Trends, Device & Communication, and Maintenance. Alarm lifecycles remain authoritative on the existing global **Alarms** page; Events & History links there instead of displaying duplicate alarm rows. Export actions live on the relevant filtered table (including Alarms), not in a standalone report destination.
+
+The repository is a frontend prototype. It has mock alarm lifecycles, maintenance schedules, five message samples with level/current/run-hour fields, and sampled totalizer values. It does not contain a device protocol decoder, protocol specification sheets, message ingest service, PostgreSQL schema, backend event-processing flow, configuration snapshots, or communication timeout rules. Type 01 / Type 03 / Type 04 wire fields, scales, and clear semantics therefore cannot be validated here. The UI does not label mock messages with those protocol types or derive state transitions from current snapshots.
+
+Operational History is empty until consecutive trustworthy pump states or comparable configuration snapshots can establish transitions. Measurements & Trends separates wet-well level, each pump's current and run-hour readings, and totalizer samples from alarm lifecycles. Device & Communication shows source message timestamps and the supplied reporting label, but does not calculate freshness or outage duration. Maintenance remains based on its own schedule and completion records. Unsupported measurements such as flow, battery voltage, and liquid quality remain unavailable. Totalizer dates without a supplied sample remain missing, not zero.
+
+Reading and maintenance tables provide filters, pagination, record details, and client-side CSV export of the full filtered result set (not just the visible page). The Alarms page exports its currently filtered lifecycle records. Exports are built from local illustrative data; there is no live device connection or reporting API.
+
+No backend, schema, message-processing pipeline, or new protocol behavior was added. Those changes require inspection of the production decoder, protocol documents, storage schema, and ingest flow first.
 
 Run the personalization ranking tests with `npm test` from `app/`.

@@ -357,3 +357,13 @@ export const rawMessages = [
   { t: '2026-10-13T13:08:22', rs: 'Scheduled Message', lv: 4.05, al: '[1]', p1: { a: 19.9, h: 197.6 }, p2: { a: 0, h: 214 }, p3: { a: 20.0, h: 195.5 } },
   { t: '2026-10-13T12:08:22', rs: 'Scheduled Message', lv: 3.98, al: '[1]', p1: { a: 20.0, h: 196.8 }, p2: { a: 0, h: 214 }, p3: { a: 19.8, h: 194.7 } },
 ]
+
+// Sampled values already shown by the station Totalizer chart. Unlisted dates
+// represent missing samples; they are not treated as zero-output readings.
+export const totalizerReadings = [
+  { day: 6, gallons: 300 },
+  { day: 7, gallons: 12300 },
+  { day: 9, gallons: 1500 },
+  { day: 12, gallons: 8300 },
+  { day: 13, gallons: 4600 },
+]

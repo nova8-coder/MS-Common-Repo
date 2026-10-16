@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ACCTS, allStations, GRPS, ORGS } from '../data/mockData'
 import type { StationRecord } from '../data/mockData'
 
@@ -107,6 +107,7 @@ export function StationsListPage({
 
   // Selection state
   const [selectedStations, setSelectedStations] = useState<string[]>([])
+  const [mapSelectedStation, setMapSelectedStation] = useState<string | null>(null)
 
   // Open filter drawer
   const openFilterDrawer = () => {
@@ -181,6 +182,21 @@ export function StationsListPage({
       return matchesFilters(s, effectiveFilters)
     })
   }, [currentTab, appliedFilters, searchQuery, selectedOrg, selectedAcct, selectedGrp])
+
+  useEffect(() => {
+    if (mapSelectedStation && !filteredStations.some(station => station.n === mapSelectedStation)) {
+      setMapSelectedStation(null)
+    }
+  }, [filteredStations, mapSelectedStation])
+
+  const mapFocus = filteredStations.find(station => station.n === mapSelectedStation)
+  const mapFocusIndex = mapFocus ? filteredStations.indexOf(mapFocus) : -1
+  const mapZoom = 1.8
+  const mapFocusX = mapFocusIndex >= 0 ? 8 + (mapFocusIndex % 6) * 15 + ((mapFocusIndex * 7) % 5) : 50
+  const mapFocusY = mapFocusIndex >= 0 ? 12 + Math.floor(mapFocusIndex / 6) * 22 + ((mapFocusIndex * 3) % 7) : 50
+  const mapTransform = mapFocus
+    ? `translate(${50 - mapZoom * mapFocusX}%, ${50 - mapZoom * mapFocusY}%) scale(${mapZoom})`
+    : 'translate(0%, 0%) scale(1)'
 
   // Count for tab
   const getCountForTab = (t: CustomTab) => {
@@ -560,34 +576,87 @@ export function StationsListPage({
         </div>
       ) : (
         /* Schematic Map View */
-        <div className="stations-map-schematic-view">
-          <div className="map-grid-canvas">
-            {filteredStations.map((s, idx) => {
-              const xPos = 8 + (idx % 6) * 15 + ((idx * 7) % 5)
-              const yPos = 12 + Math.floor(idx / 6) * 22 + ((idx * 3) % 7)
-              const hasAlarm = s.al > 0
-              const hasFault = s.p.some(p => p?.run === 'fault')
+        <div className="stations-map-layout">
+          <div className="stations-map-schematic-view">
+            <div className="map-viewport">
+              <div className="map-grid-canvas" style={{ transform: mapTransform }}>
+                {filteredStations.map((s, idx) => {
+                  const xPos = 8 + (idx % 6) * 15 + ((idx * 7) % 5)
+                  const yPos = 12 + Math.floor(idx / 6) * 22 + ((idx * 3) % 7)
+                  const hasAlarm = s.al > 0
+                  const hasFault = s.p.some(p => p?.run === 'fault' || p?.maint === 'overdue')
+                  const isFocused = mapSelectedStation === s.n
 
-              return (
-                <div
-                  key={s.n}
-                  className={`map-station-pin ${hasAlarm ? 'pin-alarm' : hasFault ? 'pin-fault' : 'pin-normal'}`}
-                  style={{ left: `${xPos}%`, top: `${yPos}%` }}
-                  onClick={() => onSelectStation(s.n)}
-                  title={`${s.n}: ${s.rs} (${hasAlarm ? 'Active Alarm' : 'Normal'})`}
-                >
-                  <span className="pin-pulse" />
-                  <span className="pin-label">{s.n}</span>
-                </div>
-              )
-            })}
+                  return (
+                    <button
+                      key={s.n}
+                      type="button"
+                      className={`map-station-pin ${hasAlarm ? 'pin-alarm' : hasFault ? 'pin-fault' : 'pin-normal'} ${isFocused ? 'pin-selected' : ''}`}
+                      style={{ left: `${xPos}%`, top: `${yPos}%` }}
+                      onClick={() => setMapSelectedStation(s.n)}
+                      aria-label={`Focus map on ${s.n}`}
+                      aria-pressed={isFocused}
+                      title={`${s.n}: ${s.rs} (${hasAlarm ? 'Active alarm' : hasFault ? 'Pump fault or maintenance' : 'Normal'})`}
+                    >
+                      <span className="pin-pulse" />
+                      <span className="pin-label">{s.n}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="map-legend-box">
+              <span className="legend-item"><span className="legend-circle dot-blue" /> Normal</span>
+              <span className="legend-item"><span className="legend-circle dot-red" /> Active Alarm</span>
+              <span className="legend-item"><span className="legend-circle dot-amber" /> Pump Fault / Maintenance</span>
+            </div>
           </div>
 
-          <div className="map-legend-box">
-            <span className="legend-item"><span className="legend-circle dot-blue" /> Normal</span>
-            <span className="legend-item"><span className="legend-circle dot-red" /> Active Alarm</span>
-            <span className="legend-item"><span className="legend-circle dot-amber" /> Pump Fault / Maintenance</span>
-          </div>
+          <aside className="map-assets-panel" aria-label="Map assets">
+            <div className="map-assets-header">
+              <div>
+                <h2>Assets</h2>
+                <span>{filteredStations.length} stations in this view</span>
+              </div>
+              {mapFocus && <button type="button" className="map-reset-focus" onClick={() => setMapSelectedStation(null)}>Show all</button>}
+            </div>
+
+            {mapFocus && (
+              <div className="map-focused-asset">
+                <span className="map-focused-label">Focused station</span>
+                <strong>{mapFocus.n}</strong>
+                <span className="text-muted">{mapFocus.rs}</span>
+                <button type="button" className="map-open-station" onClick={() => onSelectStation(mapFocus.n)}>Open station details <span aria-hidden="true">→</span></button>
+              </div>
+            )}
+
+            <div className="map-assets-list">
+              {filteredStations.map(s => {
+                const hasAlarm = s.al > 0
+                const hasFault = s.p.some(p => p?.run === 'fault' || p?.maint === 'overdue')
+                const isFocused = mapSelectedStation === s.n
+                const status = hasAlarm ? 'Active alarm' : hasFault ? 'Pump fault / maintenance' : 'Normal'
+                return (
+                  <button
+                    type="button"
+                    key={s.n}
+                    className={`map-asset-row ${isFocused ? 'active' : ''}`}
+                    onClick={() => setMapSelectedStation(s.n)}
+                    aria-pressed={isFocused}
+                  >
+                    <span className={`map-asset-status ${hasAlarm ? 'alarm' : hasFault ? 'fault' : ''}`} />
+                    <span className="map-asset-copy">
+                      <strong>{s.n}</strong>
+                      <span>{status}</span>
+                    </span>
+                    <span className="map-asset-zoom" aria-hidden="true">⌕</span>
+                  </button>
+                )
+              })}
+              {filteredStations.length === 0 && <div className="map-assets-empty">No stations match the current filters.</div>}
+            </div>
+          </aside>
         </div>
       )}
 

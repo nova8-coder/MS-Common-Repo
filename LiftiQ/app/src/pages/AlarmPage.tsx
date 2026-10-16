@@ -86,6 +86,36 @@ export function AlarmPage({
   }
 
   const getDuration = (a: AlarmLifecycle) => formatAlarmDuration(a)
+  const selectedFilters = [
+    `Range: Last ${timeRange} days`, alarmType ? `Type: ${alarmType}` : '',
+    component ? `Component: ${component}` : '', statusFilter ? `Status: ${statusFilter}` : '',
+    severityFilter ? `Severity: ${severityFilter}` : '', stationFilter ? `Station: ${stationFilter}` : '',
+    searchQuery ? `Search: ${searchQuery}` : '', activeSubtab === 'active' ? 'View: Active alarms' : '',
+  ].filter(Boolean)
+  const resetFilters = () => {
+    setTimeRange('30'); setAlarmType(''); setComponent(''); setStatusFilter('')
+    setSeverityFilter(''); setStationFilter(''); setSearchQuery(''); setPage(1)
+  }
+  const exportFilteredAlarms = () => {
+    const headers = [
+      ...(scope === 'global' ? ['Lift Station'] : []), 'Start Time', 'Alarm Type', 'Component',
+      'Severity', 'Status', 'Duration', 'Resolution',
+    ]
+    const quote = (value: string) => `"${value.replaceAll('"', '""')}"`
+    const rows = filteredAlarms.map(item => [
+      ...(scope === 'global' ? [item.station] : []), formatDisplayTime(item.startedAt), item.name,
+      item.component, item.severity, item.status, getDuration(item), item.resolution || '—',
+    ])
+    const csv = [headers, ...rows].map(row => row.map(quote).join(',')).join('\r\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `liftiq-${activeSubtab === 'active' ? 'active-alarms' : 'alarm-history'}.csv`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
 
   return (
     <div className={`alarm-page-container ${scope === 'global' ? 'global-alarm-page' : ''} ${embedded ? 'embedded-alarm-page' : ''} ${drawerOpen ? 'has-drawer-open' : ''}`}>
@@ -221,6 +251,12 @@ export function AlarmPage({
             onChange={e => setSearchQuery(e.target.value)}
             className="alarm-search-input"
           />
+        </div>
+        <div className="alarm-filter-actions">
+          <span>{filteredAlarms.length} matching record{filteredAlarms.length === 1 ? '' : 's'}</span>
+          {selectedFilters.length > 0 && <div className="alarm-active-filters"><b>Active filters</b>{selectedFilters.map(filter => <small key={filter}>{filter}</small>)}</div>}
+          {(timeRange !== '30' || alarmType || component || statusFilter || severityFilter || stationFilter || searchQuery) && <button className="alarm-reset-filters" onClick={resetFilters}>Reset filters</button>}
+          <button className="btn soft" disabled={!filteredAlarms.length} onClick={exportFilteredAlarms}>↓ Export filtered CSV</button>
         </div>
       </div>
 

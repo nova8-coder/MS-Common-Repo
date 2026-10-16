@@ -6,6 +6,7 @@ import { PersonalizedHome } from './pages/PersonalizedHome'
 import { NotificationsPage } from './pages/NotificationsPage'
 import { StationPage } from './pages/StationPage'
 import { StationsListPage } from './pages/StationsListPage'
+import { EventsHistoryPage } from './pages/EventsHistoryPage'
 import { initialAlarms, initialNotifications, initialPreferences } from './data/mockData'
 import type { AlarmLifecycle, MuteRule, NotificationItem } from './data/model'
 import { acknowledgeLifecycle, manuallyCompleteLifecycle } from './logic/alarmLifecycle'
@@ -31,7 +32,7 @@ const nav: [Route, string, string][] = [
   ['stations', '◆', 'Lift Stations'],
   ['alarms', '⚠', 'Alarms'],
   ['notifications', '🔔', 'Notifications'],
-  ['reports', '▤', 'Reports'],
+  ['reports', '▤', 'Events & History'],
 ]
 
 export default function App() {
@@ -442,58 +443,11 @@ export default function App() {
           )}
 
           {route === 'reports' && (
-            <div className="reports-page-card">
-              <div className="page-header-row mb-4">
-                <div>
-                  <h1 className="page-title">Reports & Export Logs</h1>
-                  <p className="page-subtitle">Historical pump run-hours, telemetry data, and compliance logs.</p>
-                </div>
-                <button
-                  className="btn-open-blue"
-                  onClick={() => notify('Report export CSV downloaded.')}
-                >
-                  📥 Export Current Monthly Summary
-                </button>
-              </div>
-
-              <div className="reports-grid-cards">
-                <div className="report-card-item">
-                  <span className="report-icon">📊</span>
-                  <div className="report-info">
-                    <strong>Monthly Station Throughput Report</strong>
-                    <p>Total inflow/outflow, station pump run hours, and peak flow rates.</p>
-                    <small className="text-muted">Generated: 10/15/2026 08:00 AM · CSV / PDF</small>
-                  </div>
-                  <button className="btn-table-action" onClick={() => notify('Downloading Throughput Report...')}>
-                    Download
-                  </button>
-                </div>
-
-                <div className="report-card-item">
-                  <span className="report-icon">⚠️</span>
-                  <div className="report-info">
-                    <strong>Alarm Lifecycle Resolution Audit</strong>
-                    <p>Full audit trail of all triggered, repeated, normalized, and completed lifecycles.</p>
-                    <small className="text-muted">Generated: 10/15/2026 08:00 AM · CSV</small>
-                  </div>
-                  <button className="btn-table-action" onClick={() => notify('Downloading Alarm Audit...')}>
-                    Download
-                  </button>
-                </div>
-
-                <div className="report-card-item">
-                  <span className="report-icon">🔧</span>
-                  <div className="report-info">
-                    <strong>Preventive Maintenance Schedule Log</strong>
-                    <p>Technician assignments, scheduled services, and completed intervals.</p>
-                    <small className="text-muted">Generated: 10/14/2026 05:30 PM · PDF</small>
-                  </div>
-                  <button className="btn-table-action" onClick={() => notify('Downloading Maintenance Schedule...')}>
-                    Download
-                  </button>
-                </div>
-              </div>
-            </div>
+            <EventsHistoryPage
+              alarms={alarms}
+              onOpenAlarms={() => navigate('alarms')}
+              onToast={notify}
+            />
           )}
         </div>
       </main>

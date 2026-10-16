@@ -5,6 +5,7 @@ import {
   pumps,
   rawMessages,
   station,
+  totalizerReadings,
 } from '../data/mockData'
 import type { AlarmLifecycle } from '../data/model'
 import { AlarmPage } from './AlarmPage'
@@ -819,33 +820,11 @@ export function StationPage({
         {/* ===================== TAB: EVENTS ===================== */}
         {tab === 'Events' && (
           <div className="messages-view-card">
-            <h3 className="panel-title mb-3">Station Events Log</h3>
-            <table className="home-table">
-              <thead>
-                <tr>
-                  <th>Event Time</th>
-                  <th>Event Type</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>10/13/2026 04:08 PM</td>
-                  <td><span className="rc-tag">Scheduled Message</span></td>
-                  <td>Routine reporting message received from station controller.</td>
-                </tr>
-                <tr>
-                  <td>10/12/2026 12:16 PM</td>
-                  <td><span className="pill-badge badge-warning">Status Report</span></td>
-                  <td>Wet well level reported at 71.1 in (normalized from 71.8 in).</td>
-                </tr>
-                <tr>
-                  <td>10/12/2026 10:04 AM</td>
-                  <td><span className="pill-badge badge-high">Alarm Triggered</span></td>
-                  <td>High Level alarm generated on Wet Well (70.2 in).</td>
-                </tr>
-              </tbody>
-            </table>
+            <h3 className="panel-title mb-3">Confirmed Operational Events</h3>
+            <div className="events-operational-evidence">
+              <b>No confirmed state transitions are supplied for {station.id}.</b>
+              <p>The local data contains current pump status snapshots and periodic Status Report samples, but no consecutive pump-state fields or comparable configuration snapshots to establish an operational change. Alarm activations remain in the Alarms lifecycle page, and ordinary Status Reports remain in Messages.</p>
+            </div>
           </div>
         )}
 
@@ -967,14 +946,15 @@ export function StationPage({
                   {/* Bars for October dates */}
                   {Array.from({ length: 15 }).map((_, i) => {
                     const day = i + 1
-                    const gal = day === 7 ? 12300 : day === 12 ? 8300 : day === 13 ? 4600 : day === 6 ? 300 : day === 9 ? 1500 : 0
+                    const reading = totalizerReadings.find(item => item.day === day)
+                    const gal = reading?.gallons ?? 0
                     const barH = (gal / 12000) * 180
                     const x = 75 + i * 48
                     return (
                       <g key={i}>
-                        <rect x={x} y={220 - barH} width="28" height={barH} fill="#0a7cd8" rx="2">
+                        {reading && <rect x={x} y={220 - barH} width="28" height={barH} fill="#0a7cd8" rx="2">
                           <title>Oct {day}: {gal.toLocaleString()} gal</title>
-                        </rect>
+                        </rect>}
                         <text x={x + 14} y="238" textAnchor="middle" fill="#71839a" fontSize="10">{day}</text>
                       </g>
                     )
@@ -985,10 +965,7 @@ export function StationPage({
               <table className="home-table">
                 <thead><tr><th>Day (Oct 2026)</th><th>Total Liquid Outlet (gal)</th></tr></thead>
                 <tbody>
-                  <tr><td>Oct 07, 2026</td><td className="font-bold">12,300 gal</td></tr>
-                  <tr><td>Oct 12, 2026</td><td className="font-bold">8,300 gal</td></tr>
-                  <tr><td>Oct 13, 2026</td><td className="font-bold">4,600 gal</td></tr>
-                  <tr><td>Oct 09, 2026</td><td className="font-bold">1,500 gal</td></tr>
+                  {totalizerReadings.map(reading => <tr key={reading.day}><td>Oct {String(reading.day).padStart(2, '0')}, 2026</td><td className="font-bold">{reading.gallons.toLocaleString()} gal</td></tr>)}
                 </tbody>
               </table>
             )}
