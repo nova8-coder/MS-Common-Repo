@@ -1,40 +1,747 @@
 import { useMemo, useState } from 'react'
 import { initialPreferences, subscriptionCategories } from '../data/mockData'
 import type { AlarmLifecycle, MuteRule, NotificationItem } from '../data/model'
-import { Badge, Empty, Panel, SectionHeading, formatDate } from '../components/UI'
 import type { NotificationFilters } from '../logic/personalization'
 
-type Preference=typeof initialPreferences
-type Pane='Inbox'|'Mute rules'|'Delivery preferences'|'Subscriptions'
-type Group={key:string;type:NotificationItem['type'];title:string;message:string;asset:string;at:string;unread:boolean;ids:string[];lifecycleId?:string;deliveries:NonNullable<NotificationItem['delivery']>}
-const recipients:{name:string;email:string;phone?:string}[]=[{name:'Vennila M',email:'vennila@hash8.io'},{name:'Mathavan S',email:'mathavan.s@hash8.io'},{name:'Seyadu Abbas',email:'seyaduabbas.su@hash8.io',phone:'+91 90000 11101'},{name:'Subashini K',email:'subashini.k@hash8.io',phone:'+91 90000 11102'},{name:'Nandhini M',email:'nandhini.m@hash8.io'}]
+type Preference = typeof initialPreferences
+type TabView = 'inbox' | 'muted' | 'suggestions' | 'manage' | 'preferences'
 
-export function NotificationsPage({items,preferences,onPreferences,onRead,onOpenAlarm,onToast,alarms,muteRules,onAddMute,onRemoveMute,initialFilters,onFiltersChange,onSaveView}:{items:NotificationItem[];preferences:Preference;onPreferences:(next:Preference)=>void;onRead:(ids:string[],read:boolean)=>void;onOpenAlarm:(id:string)=>void;onToast:(msg:string)=>void;alarms:AlarmLifecycle[];muteRules:MuteRule[];onAddMute:(rule:MuteRule)=>void;onRemoveMute:(id:string)=>void;initialFilters:NotificationFilters;onFiltersChange:(filters:NotificationFilters)=>void;onSaveView:(name:string,filters:NotificationFilters)=>void}){
-  const [pane,setPane]=useState<Pane>('Inbox'),[query,setQuery]=useState(initialFilters.query),[type,setType]=useState(initialFilters.type),[read,setRead]=useState(initialFilters.read),[detail,setDetail]=useState<Group|null>(null),[expanded,setExpanded]=useState<string|null>(null),[draft,setDraft]=useState<Preference>(preferences),[saved,setSaved]=useState(true),[expandedSub,setExpandedSub]=useState<string|null>(null),[activeEvents,setActiveEvents]=useState<Record<string,string[]>>(()=>Object.fromEntries(subscriptionCategories.map(c=>[c.id,[...c.events]]))),[recovery,setRecovery]=useState<Record<string,boolean>>(()=>Object.fromEntries(subscriptionCategories.map(c=>[c.id,true]))),[muteCandidate,setMuteCandidate]=useState<string|null>(null),[muteDuration,setMuteDuration]=useState('8'),[muteReason,setMuteReason]=useState(''),[criticalConfirmed,setCriticalConfirmed]=useState(false),[saveViewOpen,setSaveViewOpen]=useState(false),[viewName,setViewName]=useState('')
-  const groups=useMemo(()=>{const map=new Map<string,Group>();for(const item of items){const key=item.type==='Alarm'&&item.lifecycleId?`alarm-${item.lifecycleId}`:`item-${item.id}`;const current=map.get(key);if(current){current.ids.push(item.id);current.unread ||= item.unread;if(item.at>current.at){current.at=item.at;current.title=item.title;current.message=item.message;current.asset=item.asset}if(item.delivery)current.deliveries.push(...item.delivery)}else map.set(key,{key,type:item.type,title:item.title,message:item.message,asset:item.asset,at:item.at,unread:item.unread,ids:[item.id],lifecycleId:item.lifecycleId,deliveries:[...(item.delivery||[])]})}return [...map.values()].sort((a,b)=>b.at.localeCompare(a.at))},[items])
-  const rows=groups.filter(g=>(!query||`${g.title} ${g.message} ${g.asset} ${g.type}`.toLowerCase().includes(query.toLowerCase()))&&(!type||g.type===type)&&(!read||(read==='Unread'?g.unread:!g.unread)))
-  const filterState={query,type,read}
-  const updateFilters=(next:NotificationFilters)=>{setQuery(next.query);setType(next.type);setRead(next.read);onFiltersChange(next)}
-  const toggle=(cat:string,key:'email'|'push'|'sms'|'recovery')=>{setDraft(prev=>({...prev,[cat]:{...prev[cat],[key]:!prev[cat][key]}}));setSaved(false)}
-  const save=()=>{onPreferences(draft);setSaved(true);onToast('Notification preferences saved locally.')}
-  const changeEvent=(cat:string,event:string)=>setActiveEvents(prev=>({...prev,[cat]:prev[cat].includes(event)?prev[cat].filter(e=>e!==event):[...prev[cat],event]}))
-  const candidate=alarms.find(alarm=>alarm.id===muteCandidate)
-  const criticalMute=!!candidate&&candidate.severity==='High'&&['Active','Acknowledged','Recovery review'].includes(candidate.status)
-  const saveMute=()=>{if(!candidate||criticalMute&&!criticalConfirmed)return;const hours=Number(muteDuration);onAddMute({id:`MR-${Date.now()}`,lifecycleId:candidate.id,station:candidate.station,event:candidate.name,scope:criticalMute?'Repeated reminders only · this lifecycle':'This lifecycle',mutedBy:'Venky Karuppanan',createdAt:new Date().toISOString(),expiresAt:hours?new Date(Date.now()+hours*3600000).toISOString():undefined,reason:muteReason.trim()});setMuteCandidate(null);setMuteReason('');setCriticalConfirmed(false);onToast('Mute rule added. Alarm lifecycle remains unchanged and visible.')}
-  const renderInbox=()=> <><div className="callout mb-4">Inbox updates include alarms, asset changes, maintenance, and system activity. Repeated messages are grouped only when they share an alarm lifecycle.</div><div className="mb-4 flex flex-wrap gap-2"><input className="input min-w-56 flex-1" placeholder="Search notifications or assets" value={query} onChange={e=>updateFilters({...filterState,query:e.target.value})}/><select className="select" value={type} onChange={e=>updateFilters({...filterState,type:e.target.value})}><option value="">All types</option>{['Alarm','Asset change','Maintenance','System'].map(x=><option key={x}>{x}</option>)}</select><select className="select" value={read} onChange={e=>updateFilters({...filterState,read:e.target.value})}><option value="">Read and unread</option><option>Unread</option><option>Read</option></select><button className="btn" onClick={()=>updateFilters({query:'',type:'',read:''})}>Clear filters</button></div><div className="notification-view-tools">{(query||type||read)&&<div className="active-filter-summary"><b>Active filters:</b> {query&&<span>Search “{query}”</span>}{type&&<span>Type: {type}</span>}{read&&<span>Status: {read}</span>}<button className="btn" onClick={()=>updateFilters({query:'',type:'',read:''})}>Reset filters</button></div>}<button className="btn soft" onClick={()=>setSaveViewOpen(true)}>Save this view</button></div>{saveViewOpen&&<Panel className="save-view-form"><label><span className="field-label">Name this notification view</span><input className="input" maxLength={50} value={viewName} onChange={e=>setViewName(e.target.value)} placeholder="e.g. My active alarms"/></label><div><button className="btn" onClick={()=>setSaveViewOpen(false)}>Cancel</button><button className="btn primary" disabled={!viewName.trim()} onClick={()=>{onSaveView(viewName.trim(),filterState);setSaveViewOpen(false);setViewName('')}}>Save view</button></div></Panel>}<Panel className="divide-y divide-slate-100">{rows.map(row=><article key={row.key} className="flex flex-wrap items-start gap-3 p-4"><span className={`mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold ${row.type==='Alarm'?'bg-red-50 text-red-700':row.type==='Maintenance'?'bg-amber-50 text-amber-800':row.type==='Asset change'?'bg-sky-50 text-sky-800':'bg-slate-100 text-slate-700'}`}>{row.type==='Alarm'?'!':row.type==='Asset change'?'A':row.type==='Maintenance'?'M':'S'}</span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><Badge tone={row.type==='Alarm'?'active':row.type==='Maintenance'?'warning':row.type==='Asset change'?'info':'neutral'}>{row.type}</Badge><h3 className="font-semibold text-slate-900">{row.title}</h3>{row.unread&&<Badge tone="unread">Unread</Badge>}</div><p className="mt-1 text-sm text-slate-700">{row.message}</p><div className="muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs"><span>Asset: {row.asset}</span><span>{formatDate(row.at)}</span>{row.type==='Alarm'&&<span>{row.ids.length} message{row.ids.length===1?'':'s'} · lifecycle {row.lifecycleId}</span>}{row.deliveries.length>0&&<span>Delivery: {row.deliveries.at(-1)?.channel} · {row.deliveries.at(-1)?.status}</span>}</div>{expanded===row.key&&row.type==='Alarm'&&<div className="mt-3 rounded bg-slate-50 p-3 text-sm">{items.filter(i=>row.ids.includes(i.id)).sort((a,b)=>a.at.localeCompare(b.at)).map(i=><div key={i.id} className="flex flex-wrap justify-between gap-2 border-b border-slate-200 py-2 last:border-0"><span>{i.title} <span className="muted">· {formatDate(i.at)}</span></span><span className="muted">{i.delivery?.length?i.delivery.map(d=>`${d.channel}: ${d.status}`).join(' · '):'No delivery attempt recorded'}</span></div>)}</div>}</div><div className="flex shrink-0 gap-2"><button className="btn" onClick={()=>{if(row.unread)onRead(row.ids,true);setDetail({...row,unread:false})}}>Details</button>{row.type==='Alarm'&&<><button className="btn" onClick={()=>setExpanded(expanded===row.key?null:row.key)}>{expanded===row.key?'Hide history':'History'}</button><button className="btn" onClick={()=>setMuteCandidate(row.lifecycleId||null)}>Mute reminders</button></>}<button className="btn soft" onClick={()=>onRead(row.ids,row.unread)}>{row.unread?'Mark read':'Mark unread'}</button></div></article>)}{!rows.length&&<Empty title="No notifications match these filters" detail="Clear a filter or search for another asset."/>}</Panel><p className="muted mt-3 text-xs">A generated notification does not imply delivery. Delivery status appears only where the mock includes an attempt.</p>{detail&&<div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/35 p-4" onClick={()=>setDetail(null)}><Panel className="w-full max-w-lg p-5" onClick={e=>e.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><Badge tone={detail.type==='Alarm'?'active':detail.type==='Maintenance'?'warning':'info'}>{detail.type}</Badge><h2 className="mt-2 text-lg font-bold">{detail.title}</h2></div><button className="btn" onClick={()=>setDetail(null)}>×</button></div><p className="mt-3">{detail.message}</p><dl className="mt-4 grid grid-cols-[100px_1fr] gap-2 text-sm"><dt className="muted">Asset</dt><dd>{detail.asset}</dd><dt className="muted">Received</dt><dd>{formatDate(detail.at)}</dd><dt className="muted">Read state</dt><dd>{detail.unread?'Unread':'Read'}</dd></dl>{detail.deliveries.length>0&&<div className="mt-4"><b className="text-sm">Delivery attempts</b>{detail.deliveries.map((d,i)=><div key={i} className="muted mt-2 text-sm">{d.channel} · {d.status} · {formatDate(d.at)}</div>)}</div>}{detail.type==='Alarm'&&detail.lifecycleId?<button className="btn primary mt-5" onClick={()=>{setDetail(null);onOpenAlarm(detail.lifecycleId!)}}>Open alarm lifecycle →</button>:<p className="muted mt-4 text-xs">Related-record navigation is a local preview in this prototype.</p>}</Panel></div>}</>
-  const renderMuteRules=()=> <><div className="callout mb-4">Mute rules pause delivery of repeated alarm notifications for one lifecycle. They never resolve or hide an alarm.</div><Panel className="table-scroll"><table className="table"><thead><tr><th>Station</th><th>Alarm</th><th>Mute scope</th><th>Created by</th><th>Expiry</th><th>Reason</th><th></th></tr></thead><tbody>{muteRules.map(rule=><tr key={rule.id}><td>{rule.station}</td><td>{rule.event}<span className="block text-xs text-slate-500">{rule.lifecycleId}</span></td><td>{rule.scope}</td><td>{rule.mutedBy}<span className="block text-xs text-slate-500">{formatDate(rule.createdAt)}</span></td><td>{rule.expiresAt?formatDate(rule.expiresAt):'Until manually removed'}</td><td>{rule.reason||'—'}</td><td><button className="btn" onClick={()=>onRemoveMute(rule.id)}>Remove rule</button></td></tr>)}</tbody></table>{!muteRules.length&&<Empty title="No mute rules" detail="Choose Mute reminders on an alarm notification to pause its reminders."/>}</Panel></>
-  const renderMuteDialog=()=>candidate&&<div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/40 p-4"><Panel className="w-full max-w-lg p-5"><h2 className="section-title">Mute notification reminders?</h2><p className="mt-2"><b>{candidate.name}</b> · {candidate.station} · {candidate.id}</p><p className="muted mt-2 text-sm">This rule affects notification delivery only. The alarm lifecycle stays visible and its status does not change.</p>{criticalMute&&<div className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"><b>High-severity lifecycle still needs review.</b><p>Only repeated reminders for this lifecycle will be muted. The alarm remains visible in Alarm Management.</p><label className="mt-2 flex items-start gap-2"><input type="checkbox" checked={criticalConfirmed} onChange={e=>setCriticalConfirmed(e.target.checked)}/>I understand this will not resolve or hide the alarm.</label></div>}<label className="mt-4 block"><span className="field-label">Mute duration</span><select className="select w-full" value={muteDuration} onChange={e=>setMuteDuration(e.target.value)}><option value="1">1 hour</option><option value="8">8 hours</option><option value="24">24 hours</option><option value="0">Until manually removed</option></select></label><label className="mt-3 block"><span className="field-label">Reason (optional)</span><input className="input w-full" value={muteReason} onChange={e=>setMuteReason(e.target.value)} placeholder="Why are reminders being muted?"/></label><div className="mt-5 flex justify-end gap-2"><button className="btn" onClick={()=>{setMuteCandidate(null);setCriticalConfirmed(false)}}>Cancel</button><button className="btn primary" disabled={criticalMute&&!criticalConfirmed} onClick={saveMute}>Confirm mute</button></div></Panel></div>
-  const renderPreferences=()=> <><div className="callout mb-4">Your choices control eligible notification delivery. Station access, administrator rules, and provider availability may also affect delivery. These settings do not guarantee delivery.</div><div className="space-y-3">{subscriptionCategories.map(cat=><Panel key={cat.id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><b>{cat.name}</b><button className="ml-3 text-xs font-semibold text-sky-700" onClick={()=>setExpandedSub(expandedSub===cat.id?null:cat.id)}>{expandedSub===cat.id?'Hide events':`Configure events (${cat.events.length})`}</button></div><div className="grid grid-cols-3 gap-3 text-center text-xs"><label>Email<input type="checkbox" className="mx-3 accent-sky-700" checked={draft[cat.id]?.email||false} onChange={()=>toggle(cat.id,'email')}/></label><label>Web Push<input type="checkbox" className="mx-3 accent-sky-700" checked={draft[cat.id]?.push||false} onChange={()=>toggle(cat.id,'push')}/></label><label>SMS<input type="checkbox" className="mx-3 accent-sky-700" checked={draft[cat.id]?.sms||false} onChange={()=>toggle(cat.id,'sms')}/></label></div></div><label className="mt-3 inline-flex items-center gap-2 text-xs"><input type="checkbox" checked={draft[cat.id]?.recovery||false} onChange={()=>toggle(cat.id,'recovery')}/>Send recovery / clear notifications</label>{expandedSub===cat.id&&<div className="mt-3 border-t border-slate-100 pt-3"><div className="muted mb-2 text-xs">Supported event definitions</div>{cat.events.map(ev=><label key={ev} className="flex items-center gap-2 border-b border-slate-50 py-2 text-sm last:border-0"><input type="checkbox" className="accent-sky-700" checked={activeEvents[cat.id]?.includes(ev)||false} onChange={()=>changeEvent(cat.id,ev)}/>{ev}</label>)}</div>}</Panel>)}</div><div className="mt-4 flex justify-end gap-2"><button className="btn" disabled={saved} onClick={()=>{setDraft(preferences);setSaved(true)}}>Discard changes</button><button className="btn primary" disabled={saved} onClick={save}>Save preferences</button></div><RecipientSettings onToast={onToast}/></>
-  const renderSubscriptions=()=> <><div className="callout mb-4">Subscription categories describe which events can generate a notification. Personal preferences above control your channels; catalogue changes here are local and do not alter device event rules.</div><Panel className="divide-y divide-slate-100">{subscriptionCategories.map(cat=><div key={cat.id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><b>{cat.name}</b><p className="muted mt-1 text-xs">{cat.events.length} supported events · example recipients configured</p></div><button className="btn" onClick={()=>setExpandedSub(expandedSub===cat.id?null:cat.id)}>{expandedSub===cat.id?'Close configuration':'Configure'}</button></div>{expandedSub===cat.id&&<div className="mt-3 rounded-md bg-slate-50 p-3"><b className="text-sm">Event definitions</b>{cat.events.map(ev=><label key={ev} className="flex items-center justify-between gap-3 border-b border-slate-200 py-2 text-sm last:border-0"><span>{ev}</span><input type="checkbox" checked={activeEvents[cat.id]?.includes(ev)||false} onChange={()=>changeEvent(cat.id,ev)}/></label>)}<label className="mt-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={recovery[cat.id]||false} onChange={e=>setRecovery(p=>({...p,[cat.id]:e.target.checked}))}/>Include recovery notifications</label><div className="mt-3 text-xs text-slate-500">Eligible users: 14 · Available channels: Email, Web Push, SMS</div></div>}</div>)}</Panel><div className="mt-3 flex justify-end"><button className="btn primary" onClick={()=>onToast('Subscription catalogue changes saved locally in this prototype.')}>Save catalogue changes</button></div></>
-  return <><div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><div className="eyebrow">Communication</div><h1 className="page-title">Notifications</h1><p className="muted mt-1">Review updates and manage how you receive them.</p></div></div><div className="mb-4 flex gap-1 overflow-auto border-b border-slate-200">{(['Inbox','Mute rules','Delivery preferences','Subscriptions'] as Pane[]).map(name=><button key={name} className={`tab ${pane===name?'active':''}`} onClick={()=>setPane(name)}>{name}</button>)}</div>{pane==='Inbox'?renderInbox():pane==='Mute rules'?renderMuteRules():pane==='Delivery preferences'?renderPreferences():renderSubscriptions()}{renderMuteDialog()}</>
+interface Recipient {
+  name: string
+  email: string
+  phone?: string
 }
 
-function RecipientSettings({onToast}:{onToast:(msg:string)=>void}){
-  type Channel='email'|'push'|'sms'
-  const [settings,setSettings]=useState(()=>Object.fromEntries(recipients.map((user,index)=>[user.email,{email:index<4,push:true,sms:!!user.phone}])))
-  const [selected,setSelected]=useState<string[]>([]),[channel,setChannel]=useState<Channel>('push'),[enabled,setEnabled]=useState(true),[confirmBulk,setConfirmBulk]=useState(false)
-  const update=(email:string,key:Channel,value:boolean)=>setSettings(prev=>({...prev,[email]:{...prev[email], [key]:value}}))
-  const apply=()=>{if(!selected.length)return;setSettings(prev=>{const next={...prev};for(const email of selected){const user=recipients.find(item=>item.email===email);if(channel!=='sms'||user?.phone)next[email]={...next[email],[channel]:enabled}}return next});onToast(`Local ${channel==='push'?'Web Push':channel} settings updated for selected recipients.`);setSelected([]);setConfirmBulk(false)}
-  const allSelected=selected.length===recipients.length
-  return <><Panel className="mt-5 table-scroll p-4"><SectionHeading title="Eligible recipients · local preview"/><p className="muted mb-3 text-xs">Changes affect this prototype session only. SMS requires a phone number; station access and administrator rules may still affect delivery.</p><div className="mb-3 flex flex-wrap items-center gap-2"><label className="mr-auto flex items-center gap-2 text-xs"><input type="checkbox" checked={allSelected} onChange={e=>setSelected(e.target.checked?recipients.map(x=>x.email):[])}/>Select all users</label><select className="select" value={channel} onChange={e=>setChannel(e.target.value as Channel)}><option value="email">Email</option><option value="push">Web Push</option><option value="sms">SMS</option></select><select className="select" value={enabled?'on':'off'} onChange={e=>setEnabled(e.target.value==='on')}><option value="on">Enable</option><option value="off">Disable</option></select><button className="btn" disabled={!selected.length} onClick={()=>setConfirmBulk(true)}>Apply to {selected.length} selected</button></div><table className="table"><thead><tr><th>Select</th><th>Name</th><th>Email address</th><th>Email</th><th>Web Push</th><th>SMS</th></tr></thead><tbody>{recipients.map(user=><tr key={user.email}><td><input type="checkbox" checked={selected.includes(user.email)} onChange={e=>setSelected(prev=>e.target.checked?[...prev,user.email]:prev.filter(x=>x!==user.email))} aria-label={`Select ${user.name}`}/></td><td>{user.name}</td><td>{user.email}</td><td><input type="checkbox" checked={settings[user.email].email} onChange={e=>update(user.email,'email',e.target.checked)} aria-label={`Email for ${user.name}`}/></td><td><input type="checkbox" checked={settings[user.email].push} onChange={e=>update(user.email,'push',e.target.checked)} aria-label={`Web Push for ${user.name}`}/></td><td><input type="checkbox" disabled={!user.phone} checked={settings[user.email].sms} onChange={e=>update(user.email,'sms',e.target.checked)} aria-label={`SMS for ${user.name}`}/></td></tr>)}</tbody></table></Panel>{confirmBulk&&<div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/40 p-4"><Panel className="w-full max-w-md p-5"><h2 className="section-title">Confirm bulk channel update</h2><p className="mt-3">Set <b>{channel==='push'?'Web Push':channel}</b> to <b>{enabled?'enabled':'disabled'}</b> for {selected.length} selected users?</p>{channel==='sms'&&selected.some(email=>!recipients.find(u=>u.email===email)?.phone)&&<p className="mt-3 rounded bg-amber-50 p-3 text-sm text-amber-900">Selected users without a phone number will be skipped.</p>}<div className="mt-5 flex justify-end gap-2"><button className="btn" onClick={()=>setConfirmBulk(false)}>Cancel</button><button className="btn primary" onClick={apply}>Confirm update</button></div></Panel></div>}</>
+const recipients: Recipient[] = [
+  { name: 'Vennila M', email: 'vennila@hash8.io' },
+  { name: 'Mathavan S', email: 'mathavan.s@hash8.io' },
+  { name: 'Seyadu Abbas', email: 'seyaduabbas.su@hash8.io', phone: '+91 90000 11101' },
+  { name: 'Subashini K', email: 'subashini.k@hash8.io', phone: '+91 90000 11102' },
+  { name: 'Nandhini M', email: 'nandhini.m@hash8.io' },
+]
+
+export function NotificationsPage({
+  items,
+  preferences,
+  onPreferences,
+  onRead,
+  onOpenAlarm,
+  onToast,
+  alarms: _alarms,
+  muteRules,
+  onAddMute,
+  onRemoveMute,
+  initialFilters,
+  onFiltersChange,
+  onSaveView,
+}: {
+  items: NotificationItem[]
+  preferences: Preference
+  onPreferences: (next: Preference) => void
+  onRead: (ids: string[], read: boolean) => void
+  onOpenAlarm: (id: string) => void
+  onToast: (msg: string) => void
+  alarms: AlarmLifecycle[]
+  muteRules: MuteRule[]
+  onAddMute: (rule: MuteRule) => void
+  onRemoveMute: (id: string) => void
+  initialFilters: NotificationFilters
+  onFiltersChange: (filters: NotificationFilters) => void
+  onSaveView: (name: string, filters: NotificationFilters) => void
+}) {
+  const [activeTab, setActiveTab] = useState<TabView>('inbox')
+  const [query, setQuery] = useState(initialFilters.query)
+  const [typeFilter, setTypeFilter] = useState(initialFilters.type)
+  const [readFilter, setReadFilter] = useState(initialFilters.read)
+
+  // Drawer & Modals
+  const [selectedNotice, setSelectedNotice] = useState<NotificationItem | null>(null)
+  const [muteTarget, setMuteTarget] = useState<NotificationItem | null>(null)
+  const [muteDuration, setMuteDuration] = useState('8')
+  const [muteReason, setMuteReason] = useState('')
+  const [criticalConfirmed, setCriticalConfirmed] = useState(false)
+  const [saveViewOpen, setSaveViewOpen] = useState(false)
+  const [viewName, setViewName] = useState('')
+
+  // Subscriptions & Preferences
+  const [draftPrefs, setDraftPrefs] = useState<Preference>(preferences)
+  const [prefsSaved, setPrefsSaved] = useState(true)
+  const [activeEvents, setActiveEvents] = useState<Record<string, string[]>>(() =>
+    Object.fromEntries(subscriptionCategories.map(c => [c.id, [...c.events]])),
+  )
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      if (query) {
+        const q = query.toLowerCase()
+        const match = item.title.toLowerCase().includes(q) || item.message.toLowerCase().includes(q) || item.asset.toLowerCase().includes(q)
+        if (!match) return false
+      }
+      if (typeFilter && item.type !== typeFilter) return false
+      if (readFilter) {
+        if (readFilter === 'Unread' && !item.unread) return false
+        if (readFilter === 'Read' && item.unread) return false
+      }
+      return true
+    })
+  }, [items, query, typeFilter, readFilter])
+
+  const counts = {
+    total: items.length,
+    alarms: items.filter(i => i.type === 'Alarm').length,
+    maint: items.filter(i => i.type === 'Maintenance').length,
+    system: items.filter(i => i.type === 'System' || i.type === 'Asset change').length,
+  }
+
+  const handleMuteConfirm = () => {
+    if (!muteTarget) return
+    const hours = Number(muteDuration)
+    const newRule: MuteRule = {
+      id: `MR-${Date.now()}`,
+      lifecycleId: muteTarget.lifecycleId || muteTarget.id,
+      station: muteTarget.asset.split(' · ')[0] || 'NOVA_02',
+      event: muteTarget.title,
+      scope: 'Repeated reminders only · this lifecycle',
+      mutedBy: 'Venky Karuppanan',
+      createdAt: new Date().toISOString(),
+      expiresAt: hours ? new Date(Date.now() + hours * 3600000).toISOString() : undefined,
+      reason: muteReason.trim() || 'Operator silenced reminders during active troubleshooting',
+    }
+    onAddMute(newRule)
+    setMuteTarget(null)
+    setMuteReason('')
+    setCriticalConfirmed(false)
+    onToast('Mute rule added. Alarm lifecycle remains active and visible in alarms.')
+  }
+
+  const togglePref = (catId: string, channel: 'email' | 'push' | 'sms' | 'recovery') => {
+    setDraftPrefs(prev => ({
+      ...prev,
+      [catId]: {
+        ...prev[catId],
+        [channel]: !prev[catId]?.[channel],
+      },
+    }))
+    setPrefsSaved(false)
+  }
+
+  const savePrefs = () => {
+    onPreferences(draftPrefs)
+    setPrefsSaved(true)
+    onToast('Notification preferences saved.')
+  }
+
+  return (
+    <div className="notifications-page-container">
+      {/* Page Title */}
+      <div className="notifications-title-line">
+        <div>
+          <h1 className="stations-page-title flex-center-gap">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+            </svg>
+            Notifications
+          </h1>
+          <p className="text-muted text-xs mt-1">Review operational updates and manage how you receive alerts.</p>
+        </div>
+      </div>
+
+      {/* Top 4 Summary Cards */}
+      <div className="notifications-summary-grid">
+        <div className="summary-stat-card">
+          <div className="summary-stat-icon">🔔</div>
+          <div>
+            <small>Total Notifications</small>
+            <strong>{counts.total}</strong>
+          </div>
+        </div>
+
+        <div className="summary-stat-card">
+          <div className="summary-stat-icon text-red">▲</div>
+          <div>
+            <small>Alarms</small>
+            <strong className="text-red">{counts.alarms}</strong>
+          </div>
+        </div>
+
+        <div className="summary-stat-card">
+          <div className="summary-stat-icon text-amber">⏱</div>
+          <div>
+            <small>Maintenance</small>
+            <strong className="text-amber">{counts.maint}</strong>
+          </div>
+        </div>
+
+        <div className="summary-stat-card">
+          <div className="summary-stat-icon text-blue">⚙</div>
+          <div>
+            <small>System &amp; Assets</small>
+            <strong className="text-blue">{counts.system}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Subtabs Bar */}
+      <div className="notifications-tabs-bar">
+        <button
+          className={`notif-tab-btn ${activeTab === 'inbox' ? 'active' : ''}`}
+          onClick={() => setActiveTab('inbox')}
+        >
+          Notification Inbox
+        </button>
+        <button
+          className={`notif-tab-btn ${activeTab === 'muted' ? 'active' : ''}`}
+          onClick={() => setActiveTab('muted')}
+        >
+          Muted Notifications ({muteRules.length})
+        </button>
+        <button
+          className={`notif-tab-btn ${activeTab === 'suggestions' ? 'active' : ''}`}
+          onClick={() => setActiveTab('suggestions')}
+        >
+          ✦ Mute Suggestions
+        </button>
+
+        <span className="flex-1" />
+
+        <button
+          className={`notif-action-link-btn ${activeTab === 'manage' ? 'font-bold text-blue' : ''}`}
+          onClick={() => setActiveTab('manage')}
+        >
+          ⚙ Manage Subscriptions
+        </button>
+        <button
+          className={`notif-action-link-btn ${activeTab === 'preferences' ? 'font-bold text-blue' : ''}`}
+          onClick={() => setActiveTab('preferences')}
+        >
+          Notification Preferences
+        </button>
+      </div>
+
+      {/* Tab: Inbox */}
+      {activeTab === 'inbox' && (
+        <div className="notif-inbox-content">
+          {/* Toolbar */}
+          <div className="notif-toolbar-row">
+            <div className="alarm-search-wrap flex-1 min-w-[240px]">
+              <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="search"
+                placeholder="Search notifications or assets..."
+                value={query}
+                onChange={e => {
+                  setQuery(e.target.value)
+                  onFiltersChange({ query: e.target.value, type: typeFilter, read: readFilter })
+                }}
+                className="alarm-search-input"
+              />
+            </div>
+
+            <select
+              value={typeFilter}
+              onChange={e => {
+                setTypeFilter(e.target.value)
+                onFiltersChange({ query, type: e.target.value, read: readFilter })
+              }}
+              className="alarm-select"
+            >
+              <option value="">All Types</option>
+              <option value="Alarm">Alarm</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Asset change">Asset Change</option>
+              <option value="System">System</option>
+            </select>
+
+            <select
+              value={readFilter}
+              onChange={e => {
+                setReadFilter(e.target.value)
+                onFiltersChange({ query, type: typeFilter, read: e.target.value })
+              }}
+              className="alarm-select"
+            >
+              <option value="">All Read States</option>
+              <option value="Unread">Unread</option>
+              <option value="Read">Read</option>
+            </select>
+
+            {(query || typeFilter || readFilter) && (
+              <button
+                className="btn-cancel-white"
+                onClick={() => {
+                  setQuery('')
+                  setTypeFilter('')
+                  setReadFilter('')
+                  onFiltersChange({ query: '', type: '', read: '' })
+                }}
+              >
+                Clear Filters
+              </button>
+            )}
+
+            <button className="btn-cancel-white" onClick={() => setSaveViewOpen(true)}>
+              ★ Save View
+            </button>
+          </div>
+
+          {/* Save View Inline Form */}
+          {saveViewOpen && (
+            <div className="save-view-box mb-3">
+              <label className="text-xs font-semibold mr-2">Name this notification view:</label>
+              <input
+                type="text"
+                placeholder="e.g. My Active Alarms"
+                value={viewName}
+                onChange={e => setViewName(e.target.value)}
+                className="completion-input flex-1"
+              />
+              <button className="btn-cancel-white" onClick={() => setSaveViewOpen(false)}>Cancel</button>
+              <button
+                className="btn-open-blue"
+                disabled={!viewName.trim()}
+                onClick={() => {
+                  onSaveView(viewName.trim(), { query, type: typeFilter, read: readFilter })
+                  setSaveViewOpen(false)
+                  setViewName('')
+                }}
+              >
+                Save
+              </button>
+            </div>
+          )}
+
+          {/* Notifications Table */}
+          <div className="alarm-table-card">
+            <table className="alarm-grid-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '45px' }} />
+                  <th>Notification</th>
+                  <th>Entity / Station</th>
+                  <th>Time</th>
+                  <th>Delivery</th>
+                  <th className="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredItems.map(item => {
+                  const isUnread = item.unread
+                  const tone = item.type === 'Alarm' ? 'red' : item.type === 'Maintenance' ? 'amber' : 'blue'
+
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`notif-row ${isUnread ? 'row-unread-highlight' : ''}`}
+                      onClick={() => setSelectedNotice(item)}
+                    >
+                      <td className="text-center">
+                        <span className={`notif-type-bullet bullet-${tone}`}>
+                          {item.type === 'Alarm' ? '!' : item.type === 'Maintenance' ? 'M' : '⚙'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex-center-gap">
+                          <span className={`pill-badge badge-${tone}`}>{item.type}</span>
+                          <strong>{item.title}</strong>
+                          {isUnread && <span className="unread-dot-badge">Unread</span>}
+                        </div>
+                        <p className="text-slate-600 text-xs mt-1">{item.message}</p>
+                      </td>
+                      <td>
+                        <strong className="text-slate-900">{item.asset}</strong>
+                      </td>
+                      <td>
+                        <span className="text-muted text-xs">{item.at.replace('T', ' ').slice(0, 16)}</span>
+                      </td>
+                      <td>
+                        <div className="flex gap-1 flex-wrap">
+                          {item.delivery?.map((d, di) => (
+                            <span key={di} className={`delivery-mini-badge badge-${d.status.toLowerCase()}`}>
+                              {d.channel}: {d.status}
+                            </span>
+                          )) || <span className="text-muted text-xs">-</span>}
+                        </div>
+                      </td>
+                      <td className="text-center">
+                        <div className="flex-center-gap justify-center" onClick={e => e.stopPropagation()}>
+                          <button
+                            className="btn-cancel-white text-xs"
+                            onClick={() => setSelectedNotice(item)}
+                          >
+                            Details
+                          </button>
+                          {item.type === 'Alarm' && (
+                            <button
+                              className="btn-cancel-white text-xs"
+                              onClick={() => setMuteTarget(item)}
+                            >
+                              Mute
+                            </button>
+                          )}
+                          <button
+                            className="btn-cancel-white text-xs"
+                            onClick={() => onRead([item.id], isUnread)}
+                          >
+                            {isUnread ? 'Mark read' : 'Mark unread'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Muted Notifications */}
+      {activeTab === 'muted' && (
+        <div className="alarm-table-card p-4">
+          <h2 className="panel-title mb-2">Muted Notification Rules</h2>
+          <p className="text-muted text-xs mb-4">
+            Mute rules pause delivery of repeated alarm notifications for one lifecycle. They never resolve or hide an alarm.
+          </p>
+          <table className="home-table">
+            <thead>
+              <tr>
+                <th>Station</th>
+                <th>Alarm</th>
+                <th>Mute Scope</th>
+                <th>Muted By</th>
+                <th>Expires</th>
+                <th>Reason</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {muteRules.map(rule => (
+                <tr key={rule.id}>
+                  <td><strong>{rule.station}</strong></td>
+                  <td>{rule.event}</td>
+                  <td><span className="subtle-chip-blue">{rule.scope}</span></td>
+                  <td>{rule.mutedBy}</td>
+                  <td>{rule.expiresAt ? rule.expiresAt.replace('T', ' ').slice(0, 16) : 'Until removed'}</td>
+                  <td>{rule.reason}</td>
+                  <td>
+                    <button className="btn-danger-outline" onClick={() => onRemoveMute(rule.id)}>
+                      Remove Rule
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!muteRules.length && (
+                <tr>
+                  <td colSpan={7} className="text-center py-6 text-muted">
+                    No active mute rules. Use the "Mute" action on any alarm notification in the Inbox to pause repeated reminders.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Tab: Mute Suggestions */}
+      {activeTab === 'suggestions' && (
+        <div className="alarm-table-card p-5">
+          <h2 className="panel-title mb-2">✦ Mute Suggestions</h2>
+          <p className="text-muted text-xs mb-4">
+            When an alarm repeats frequently while operations are already actively investigating, LiftIQ suggests muting repeated channel notifications to reduce noise.
+          </p>
+
+          <div className="space-y-3">
+            <div className="suggested-item border border-slate-200 p-4 rounded-lg">
+              <div className="suggested-icon-wrap bg-soft-red text-red">!</div>
+              <div className="suggested-body">
+                <strong>High Water Level · NOVA_02</strong>
+                <p className="text-slate-600 text-xs mt-1">
+                  Alarm LC-1042 has repeated 2 times in the last 2 hours. A status report has already arrived and is pending recovery review.
+                </p>
+              </div>
+              <button
+                className="btn-open-blue"
+                onClick={() => {
+                  const target = items.find(i => i.lifecycleId === 'LC-1042') || items[0]
+                  setMuteTarget(target)
+                }}
+              >
+                Mute Reminders
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Manage Subscriptions */}
+      {activeTab === 'manage' && (
+        <div className="alarm-table-card p-5">
+          <h2 className="panel-title mb-2">Manage Subscriptions Catalogue</h2>
+          <p className="text-muted text-xs mb-4">
+            Configure which event definitions across your stations generate system notifications.
+          </p>
+
+          <div className="space-y-4">
+            {subscriptionCategories.map(cat => (
+              <div key={cat.id} className="border border-slate-200 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-bold text-slate-800">{cat.name}</h3>
+                  <span className="text-xs text-muted">{cat.events.length} supported events</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-3">
+                  {cat.events.map(ev => {
+                    const isChecked = activeEvents[cat.id]?.includes(ev)
+                    return (
+                      <label key={ev} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            setActiveEvents(prev => ({
+                              ...prev,
+                              [cat.id]: isChecked
+                                ? prev[cat.id].filter(x => x !== ev)
+                                : [...(prev[cat.id] || []), ev],
+                            }))
+                          }}
+                        />
+                        <span>{ev}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <button className="btn-open-blue" onClick={() => onToast('Subscription catalogue saved.')}>
+              Save Catalogue Changes
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Notification Preferences */}
+      {activeTab === 'preferences' && (
+        <div className="alarm-table-card p-5">
+          <h2 className="panel-title mb-2">Delivery Channels &amp; Preferences</h2>
+          <p className="text-muted text-xs mb-4">
+            Control which delivery channels (Email, Web Push, SMS) you receive for each notification category.
+          </p>
+
+          <table className="home-table mb-6">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th className="text-center">Email</th>
+                <th className="text-center">Web Push</th>
+                <th className="text-center">SMS</th>
+                <th className="text-center">Recovery / Clear</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subscriptionCategories.map(cat => {
+                const p = draftPrefs[cat.id] || { email: false, push: true, sms: false, recovery: true }
+                return (
+                  <tr key={cat.id}>
+                    <td><strong>{cat.name}</strong></td>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={p.email}
+                        onChange={() => togglePref(cat.id, 'email')}
+                      />
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={p.push}
+                        onChange={() => togglePref(cat.id, 'push')}
+                      />
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={p.sms}
+                        onChange={() => togglePref(cat.id, 'sms')}
+                      />
+                    </td>
+                    <td className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={p.recovery}
+                        onChange={() => togglePref(cat.id, 'recovery')}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+
+          <div className="flex justify-end gap-2 mb-6">
+            <button
+              className="btn-cancel-white"
+              disabled={prefsSaved}
+              onClick={() => {
+                setDraftPrefs(preferences)
+                setPrefsSaved(true)
+              }}
+            >
+              Discard Changes
+            </button>
+            <button className="btn-open-blue" disabled={prefsSaved} onClick={savePrefs}>
+              Save Preferences
+            </button>
+          </div>
+
+          {/* Recipient Users Table */}
+          <h3 className="panel-title text-base mb-2">Eligible Recipients Directory</h3>
+          <table className="home-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email Address</th>
+                <th>Phone Number</th>
+                <th>Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recipients.map(r => (
+                <tr key={r.email}>
+                  <td><strong>{r.name}</strong></td>
+                  <td>{r.email}</td>
+                  <td>{r.phone || '-'}</td>
+                  <td><span className="subtle-chip-blue">Operator</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Slide-out Details Drawer */}
+      {selectedNotice && (
+        <div className="drawer-overlay-scrim" onClick={() => setSelectedNotice(null)}>
+          <aside className="filters-slide-drawer" onClick={e => e.stopPropagation()}>
+            <div className="filters-drawer-header">
+              <div>
+                <span className={`pill-badge badge-${selectedNotice.type === 'Alarm' ? 'red' : 'blue'}`}>
+                  {selectedNotice.type}
+                </span>
+                <h2 className="drawer-title mt-2">{selectedNotice.title}</h2>
+              </div>
+              <button className="btn-close-drawer" onClick={() => setSelectedNotice(null)}>✕</button>
+            </div>
+
+            <div className="p-5 text-sm space-y-4">
+              <p className="text-slate-700">{selectedNotice.message}</p>
+
+              <dl className="twin-kv-list">
+                <div className="kv-item"><span>Asset</span><strong>{selectedNotice.asset}</strong></div>
+                <div className="kv-item"><span>Timestamp</span><strong>{selectedNotice.at.replace('T', ' ')}</strong></div>
+                <div className="kv-item"><span>Read Status</span><strong>{selectedNotice.unread ? 'Unread' : 'Read'}</strong></div>
+              </dl>
+
+              {selectedNotice.delivery && selectedNotice.delivery.length > 0 && (
+                <div>
+                  <h4 className="font-bold text-slate-800 mb-2">Delivery Attempts</h4>
+                  <div className="space-y-2">
+                    {selectedNotice.delivery.map((d, i) => (
+                      <div key={i} className="flex justify-between p-2 rounded bg-slate-50 border border-slate-200 text-xs">
+                        <span><strong>{d.channel}</strong>: {d.status}</span>
+                        <span className="text-muted">{d.at.replace('T', ' ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedNotice.type === 'Alarm' && selectedNotice.lifecycleId && (
+                <div className="pt-4 border-t border-slate-200">
+                  <button
+                    className="btn-open-blue w-full"
+                    onClick={() => {
+                      setSelectedNotice(null)
+                      onOpenAlarm(selectedNotice.lifecycleId!)
+                    }}
+                  >
+                    Open Alarm Lifecycle in Alarms →
+                  </button>
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Mute Reminders Modal */}
+      {muteTarget && (
+        <div className="modal-backdrop" onClick={() => setMuteTarget(null)}>
+          <div className="modal-window max-w-lg" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Mute Notification Reminders?</h2>
+              <button className="btn-close" onClick={() => setMuteTarget(null)}>✕</button>
+            </div>
+            <div className="modal-body text-sm space-y-3">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-900 text-xs">
+                <strong>High-Severity Alarm Notice</strong>
+                <p className="mt-1">
+                  Muting pauses repeated push and email notifications for this lifecycle only. The alarm lifecycle itself remains active, visible, and unmodified in Alarm Management.
+                </p>
+                <label className="flex items-start gap-2 mt-2 font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={criticalConfirmed}
+                    onChange={e => setCriticalConfirmed(e.target.checked)}
+                  />
+                  I understand this does not resolve or clear the alarm.
+                </label>
+              </div>
+
+              <div>
+                <label className="field-group-label mb-1">Mute Duration</label>
+                <select
+                  value={muteDuration}
+                  onChange={e => setMuteDuration(e.target.value)}
+                  className="alarm-select w-full"
+                >
+                  <option value="1">1 Hour</option>
+                  <option value="8">8 Hours</option>
+                  <option value="24">24 Hours</option>
+                  <option value="0">Until Manually Removed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="field-group-label mb-1">Reason / Note (optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Currently onsite replacing sensor"
+                  value={muteReason}
+                  onChange={e => setMuteReason(e.target.value)}
+                  className="completion-input w-full"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-cancel-white" onClick={() => setMuteTarget(null)}>Cancel</button>
+              <button
+                className="btn-open-blue"
+                disabled={!criticalConfirmed}
+                onClick={handleMuteConfirm}
+              >
+                Confirm Mute
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
