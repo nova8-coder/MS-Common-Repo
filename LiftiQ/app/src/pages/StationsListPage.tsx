@@ -79,9 +79,11 @@ const filterCategories: FilterCategory[] = [
 
 export function StationsListPage({
   onSelectStation,
+  onWatchAssets,
   onToast,
 }: {
   onSelectStation: (name: string) => void
+  onWatchAssets: (assetIds: string[]) => void
   onToast: (msg: string) => void
 }) {
   const [tabsList, setTabsList] = useState<CustomTab[]>(initialCustomTabs)
@@ -324,6 +326,7 @@ export function StationsListPage({
         </div>
 
         <div className="toolbar-right-group">
+          {selectedStations.length > 0 && <button className="btn primary" onClick={() => onWatchAssets(selectedStations)}>◷ Watch {selectedStations.length} selected</button>}
           <span className="total-stations-badge">
             Total Lift Stations: {filteredStations.length}
           </span>

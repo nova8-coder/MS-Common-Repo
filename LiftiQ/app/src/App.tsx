@@ -7,6 +7,7 @@ import { NotificationsPage } from './pages/NotificationsPage'
 import { StationPage } from './pages/StationPage'
 import { StationsListPage } from './pages/StationsListPage'
 import { EventsHistoryPage } from './pages/EventsHistoryPage'
+import { WatchModePage } from './pages/WatchModePage'
 import { initialAlarms, initialNotifications, initialPreferences, station } from './data/mockData'
 import type { AlarmLifecycle, MuteRule, NotificationItem } from './data/model'
 import { NotificationBell } from './components/NotificationBell'
@@ -26,12 +27,13 @@ import type {
   PersonalizationState,
 } from './logic/personalization'
 
-type Route = 'dashboard' | 'personalized' | 'stations' | 'alarms' | 'notifications' | 'reports'
+type Route = 'dashboard' | 'personalized' | 'stations' | 'watch' | 'alarms' | 'notifications' | 'reports'
 
 const nav: [Route, string, string][] = [
   ['dashboard', '▦', 'Dashboard'],
   ['personalized', '✦', 'Personalized Home'],
   ['stations', '◆', 'Lift Stations'],
+  ['watch', '◷', 'Watch Mode'],
   ['alarms', '⚠', 'Alarms'],
   ['notifications', '🔔', 'Notifications'],
   ['reports', '▤', 'Events & History'],
@@ -44,6 +46,7 @@ export default function App() {
   )
   const [stationSelected, setStationSelected] = useState(false)
   const [stationTab, setStationTab] = useState('Pump Health')
+  const [watchInitialAssets, setWatchInitialAssets] = useState<string[]>([])
   const [taskEntry, setTaskEntry] = useState<{ source: 'home' | 'dashboard'; at: number } | null>(null)
   const [alarms, setAlarms] = useState<AlarmLifecycle[]>(initialAlarms)
   const [notices, setNotices] = useState<NotificationItem[]>(initialNotifications)
@@ -412,9 +415,21 @@ export default function App() {
             ) : (
               <StationsListPage
                 onSelectStation={name => openStationFromList(name)}
+                onWatchAssets={assetIds => {
+                  setWatchInitialAssets(assetIds)
+                  navigate('watch')
+                }}
                 onToast={notify}
               />
             )
+          )}
+
+          {route === 'watch' && (
+            <WatchModePage
+              alarms={alarms}
+              initialAssets={watchInitialAssets}
+              onToast={notify}
+            />
           )}
 
           {route === 'alarms' && (
