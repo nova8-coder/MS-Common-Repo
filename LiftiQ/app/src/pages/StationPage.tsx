@@ -11,6 +11,7 @@ import type { AlarmLifecycle } from '../data/model'
 import { AlarmPage } from './AlarmPage'
 import type { ManualCompletion } from './AlarmPage'
 import { formatDate } from '../components/UI'
+import { MeasurementsTrendsPanel } from './MeasurementsTrendsPanel'
 
 const tabs = [
   'Overview',
@@ -83,10 +84,6 @@ export function StationPage({
     { c: 'Lift Station Location', t: '10/05/2026 05:23:49 PM', st: 'Skipped', by: 'Maheshkumar B', d: 'Poll Location of the Lift Station' },
   ])
   const [commandMenuIdx, setCommandMenuIdx] = useState(0)
-
-  // Trends state
-  const [trendRange, setTrendRange] = useState('7d')
-  const [trendSubtab, setTrendSubtab] = useState<'lvl' | 'run'>('lvl')
 
   // Totalizer state
   const [totalizerGranularity, setTotalizerGranularity] = useState<'d' | 'm' | 'y'>('d')
@@ -840,84 +837,7 @@ export function StationPage({
 
         {/* ===================== TAB: TRENDS ===================== */}
         {tab === 'Trends' && (
-          <div className="trends-view-card">
-            <div className="trends-kpi-row">
-              <div className="kpi-mini-box">
-                <small>Total Liquid Outlet (This Month)</small>
-                <strong>28,000 gal</strong>
-              </div>
-              <div className="kpi-mini-box">
-                <small>Avg. Liquid Outlet (This Month)</small>
-                <strong>2,154 gpd</strong>
-              </div>
-              <div className="kpi-mini-box">
-                <small>Highest Liquid Outlet (Last 30d)</small>
-                <strong>12,300 gal</strong>
-                <small className="text-muted">on 10/07/2026</small>
-              </div>
-              <div className="kpi-mini-box">
-                <small>Avg. Run Hours (This Month)</small>
-                <strong>4.1 hrs/day</strong>
-              </div>
-            </div>
-
-            <div className="panel-header-line mt-4">
-              <div className="flex gap-2">
-                <button
-                  className={`btn-maint-pump ${trendSubtab === 'lvl' ? 'active-solid' : ''}`}
-                  onClick={() => setTrendSubtab('lvl')}
-                >
-                  Wet Well Level
-                </button>
-                <button
-                  className={`btn-maint-pump ${trendSubtab === 'run' ? 'active-solid' : ''}`}
-                  onClick={() => setTrendSubtab('run')}
-                >
-                  Pump Run Hours
-                </button>
-              </div>
-
-              <select value={trendRange} onChange={e => setTrendRange(e.target.value)} className="alarm-select">
-                <option value="24h">Last 24 Hours</option>
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-              </select>
-            </div>
-
-            {trendSubtab === 'lvl' ? (
-              <div className="chart-canvas-wrap mt-3">
-                <svg viewBox="0 0 900 280" className="w-full">
-                  {[0, 30, 60, 90, 120].map(v => {
-                    const y = 240 - (v / 120) * 200
-                    return (
-                      <g key={v}>
-                        <line x1="50" y1={y} x2="860" y2={y} stroke="#e4eaf2" />
-                        <text x="40" y={y + 4} textAnchor="end" fill="#71839a" fontSize="11">{v}</text>
-                      </g>
-                    )
-                  })}
-                  {/* High level threshold 70 in */}
-                  <line x1="50" y1={240 - (70 / 120) * 200} x2="860" y2={240 - (70 / 120) * 200} stroke="#e03a3a" strokeDasharray="5 4" strokeWidth="1.8" />
-                  <text x="850" y={240 - (70 / 120) * 200 - 6} textAnchor="end" fill="#e03a3a" fontSize="11">High level threshold 70 in</text>
-
-                  {/* Level trend line */}
-                  <polyline
-                    fill="none"
-                    stroke="#0a7cd8"
-                    strokeWidth="2.5"
-                    points="50,225 150,223 250,220 350,218 450,123 480,121 510,122 550,222 650,224 750,225 850,224"
-                  />
-                  <text x="470" y="110" textAnchor="middle" fill="#0a7cd8" fontWeight="bold" fontSize="11">Oct 12 Alarm Peak (71.8 in)</text>
-
-                  <text x="20" y="140" transform="rotate(-90 20 140)" textAnchor="middle" fill="#71839a" fontSize="11">Wet Well Level (in)</text>
-                </svg>
-              </div>
-            ) : (
-              <div className="p-8 text-center text-slate-500">
-                <p>Pump Run Hours recorded across 3 pumps: P1: 200h · P2: 214h · P3: 198h</p>
-              </div>
-            )}
-          </div>
+          <MeasurementsTrendsPanel />
         )}
 
         {/* ===================== TAB: TOTALIZER ===================== */}

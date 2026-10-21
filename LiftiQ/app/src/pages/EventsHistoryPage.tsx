@@ -4,13 +4,15 @@ import type { StationRecord } from '../data/mockData'
 import type { AlarmLifecycle } from '../data/model'
 import { Empty, PageTitle } from '../components/UI'
 
-type MessageCategory = 'Alarm' | 'Event' | 'Status / telemetry'
-type CategoryFilter = 'All messages' | 'Alarm messages' | 'Event messages' | 'Status / telemetry'
+type MessageCategory = 'Alarm' | 'Event' | 'Status' | 'Telemetry' | 'Other'
+type CategoryFilter = 'All messages' | 'Alarm messages' | 'Event messages' | 'Status messages' | 'Telemetry / measurement messages' | 'Other supported'
+type CategoryTab = { label: CategoryFilter; key?: MessageCategory }
 type HistoryRecord = {
   id: string
   station: string
   equipment: string
-  category: MessageCategory
+  category: string
+  categories: MessageCategory[]
   subtype: string
   title: string
   summary: string
@@ -21,7 +23,10 @@ type HistoryRecord = {
   note: string
 }
 
-const categoryFilters: CategoryFilter[] = ['All messages', 'Alarm messages', 'Event messages', 'Status / telemetry']
+const categoryFilters: CategoryTab[] = [
+  { label: 'All messages' }, { label: 'Alarm messages', key: 'Alarm' }, { label: 'Event messages', key: 'Event' },
+  { label: 'Status messages', key: 'Status' }, { label: 'Telemetry / measurement messages', key: 'Telemetry' }, { label: 'Other supported', key: 'Other' },
+]
 const columns = [
   { key: 'occurredAt', label: 'Time' }, { key: 'station', label: 'Station / Asset' },
   { key: 'title', label: 'Message' }, { key: 'equipment', label: 'Equipment' },
@@ -37,11 +42,13 @@ function displayValue(value: unknown) {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
   return String(value)
 }
-function stationCategory(reason: string): MessageCategory {
+function stationCategory(reason: string): { category: string; categories: MessageCategory[] } {
   const normalized = reason.toLowerCase()
-  if (normalized.includes('alarm') || normalized.includes('fault')) return 'Alarm'
-  if (reason === 'Scheduled Message') return 'Status / telemetry'
-  return 'Event'
+  if (normalized.includes('alarm') || normalized.includes('fault')) return { category: 'Alarm', categories: ['Alarm'] }
+  if (reason === 'Scheduled Message') return { category: 'Status + telemetry', categories: ['Status', 'Telemetry'] }
+  if (normalized.includes('configuration message')) return { category: 'Configuration', categories: ['Other'] }
+  if (/^pump\s*\d+\s+on$/i.test(reason)) return { category: 'Event', categories: ['Event'] }
+  return { category: 'Other supported record', categories: ['Other'] }
 }
 function stationEquipment(reason: string) {
   const pump = reason.match(/pump\s*(\d+)/i)
@@ -68,8 +75,8 @@ function stationFields(record: StationRecord) {
 }
 function downloadCsv(rows: HistoryRecord[]) {
   const quote = (value: string) => `"${value.replaceAll('"', '""')}"`
-  const csvColumns = ['Time', 'Station / Asset', 'Message', 'Equipment', 'Type', 'Subtype', 'Source', 'Record ID']
-  const csvRows = rows.map(row => [formatTime(row.occurredAt), row.station, row.title, row.equipment, row.category, row.subtype, row.source, row.id])
+  const csvColumns = ['Time', 'Station / Asset', 'Message', 'Equipment', 'Type', 'Subtype', 'Source', 'Record Type', 'Parsed Fields', 'Record Context', 'Record ID']
+  const csvRows = rows.map(row => [formatTime(row.occurredAt), row.station, row.title, row.equipment, row.category, row.subtype, row.source, row.recordType, JSON.stringify(row.fields), row.note, row.id])
   const csv = [csvColumns, ...csvRows].map(line => line.map(quote).join(',')).join('\r\n')
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
   const anchor = document.createElement('a')
@@ -87,7 +94,7 @@ export function EventsHistoryPage({ alarms, onOpenAlarms, onOpenStation, onToast
   onOpenStation: (tab?: string) => void
   onToast: (message: string) => void
 }) {
-  const [category, setCategory] = useState<CategoryFilter>('All messages')
+  const [category, setCategory] = useState<CategoryTab>(categoryFilters[0])
   const [stationFilter, setStationFilter] = useState('')
   const [subtypeFilter, setSubtypeFilter] = useState('')
   const [equipmentFilter, setEquipmentFilter] = useState('')
@@ -104,18 +111,18 @@ export function EventsHistoryPage({ alarms, onOpenAlarms, onOpenStation, onToast
       if (!record.t || !record.rs.trim() || record.rs.trim() === '-') return []
       // NOVA_02's station-list row and the first decoded message are the same sample.
       if (record.n === station.id && rawMessages.some(message => message.t.slice(0, 16) === record.t?.slice(0, 16))) return []
-      const recordCategory = stationCategory(record.rs)
+      const classification = stationCategory(record.rs)
       return [{
-        id: `station-record-${index}`, station: record.n, equipment: stationEquipment(record.rs), category: recordCategory,
-        subtype: record.rs, title: recordCategory === 'Status / telemetry' ? 'Scheduled station report' : record.rs,
-        summary: recordCategory === 'Alarm' ? `Station record reports: ${record.rs}.` : `Station record reports: ${record.rs}.`,
+        id: `station-record-${index}`, station: record.n, equipment: stationEquipment(record.rs), ...classification,
+        subtype: record.rs, title: classification.category === 'Status + telemetry' ? 'Scheduled station report' : record.rs,
+        summary: `Station record reports: ${record.rs}.`,
         occurredAt: record.t, source: 'Station list record (sample)', recordType: 'Station summary record',
         fields: stationFields(record),
         note: 'This is the latest station-list sample supplied for this asset. The sample does not include original payload bytes or a protocol subtype definition.',
       }]
     })
     const telemetryRecords: HistoryRecord[] = rawMessages.map((message, index) => ({
-      id: `status-report-${index}`, station: station.id, equipment: 'Station controller', category: 'Status / telemetry',
+      id: `status-report-${index}`, station: station.id, equipment: 'Station controller', category: 'Status + telemetry', categories: ['Status', 'Telemetry'],
       subtype: message.rs, title: 'Scheduled station report',
       summary: `Wet well ${message.lv.toFixed(2)} in · pump readings included`, occurredAt: message.t,
       source: message.rs, recordType: 'Status Report sample',
@@ -129,7 +136,7 @@ export function EventsHistoryPage({ alarms, onOpenAlarms, onOpenStation, onToast
     }))
     const alarmHistory: HistoryRecord[] = alarms.flatMap(alarm => alarm.events.map((event, index) => ({
       id: `alarm-${alarm.id}-${event.id}-${index}`, station: alarm.station, equipment: alarm.component,
-      category: 'Alarm' as const, subtype: event.kind, title: event.title, summary: event.detail,
+      category: 'Alarm lifecycle' as const, categories: ['Alarm'] as MessageCategory[], subtype: event.kind, title: event.title, summary: event.detail,
       occurredAt: event.at, source: `${event.kind[0].toUpperCase()}${event.kind.slice(1)} alarm lifecycle`,
       recordType: 'Alarm lifecycle history',
       fields: {
@@ -145,10 +152,7 @@ export function EventsHistoryPage({ alarms, onOpenAlarms, onOpenStation, onToast
     return [...summaryRecords, ...telemetryRecords, ...alarmHistory].sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
   }, [alarms])
 
-  const categoryFiltered = category === 'All messages' ? records : records.filter(record =>
-    category === 'Alarm messages' ? record.category === 'Alarm' :
-      category === 'Event messages' ? record.category === 'Event' : record.category === 'Status / telemetry')
-  const filtered = categoryFiltered.filter(record => {
+  const matchingFilters = records.filter(record => {
     if (stationFilter && record.station !== stationFilter) return false
     if (subtypeFilter && record.subtype !== subtypeFilter) return false
     if (equipmentFilter && record.equipment !== equipmentFilter) return false
@@ -162,31 +166,33 @@ export function EventsHistoryPage({ alarms, onOpenAlarms, onOpenStation, onToast
     }
     return true
   })
+  const activeCategoryKey = category.key
+  const categoryFiltered = activeCategoryKey ? matchingFilters.filter(record => record.categories.includes(activeCategoryKey)) : matchingFilters
+  const categoryRecords = activeCategoryKey ? records.filter(record => record.categories.includes(activeCategoryKey)) : records
+  const filtered = categoryFiltered
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, pageCount)
   const visible = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const stations = [...new Set(records.map(record => record.station))].sort()
-  const subtypes = [...new Set(categoryFiltered.map(record => record.subtype))].sort()
-  const equipment = [...new Set(categoryFiltered.map(record => record.equipment))].sort()
-  const sources = [...new Set(categoryFiltered.map(record => record.source))].sort()
-  const alarmCount = records.filter(record => record.category === 'Alarm').length
-  const eventCount = records.filter(record => record.category === 'Event').length
-  const telemetryCount = records.filter(record => record.category === 'Status / telemetry').length
+  const subtypes = [...new Set(categoryRecords.map(record => record.subtype))].sort()
+  const equipment = [...new Set(categoryRecords.map(record => record.equipment))].sort()
+  const sources = [...new Set(categoryRecords.map(record => record.source))].sort()
+  const categoryCounts = new Map<MessageCategory, number>(['Alarm', 'Event', 'Status', 'Telemetry', 'Other'].map(key => [key as MessageCategory, matchingFilters.filter(record => record.categories.includes(key as MessageCategory)).length]))
   const resetFilters = () => { setStationFilter(''); setSubtypeFilter(''); setEquipmentFilter(''); setSourceFilter(''); setFromDate(''); setToDate(''); setSearch(''); setPage(1); setSelected(null) }
   const setFilter = (setter: (value: string) => void) => (value: string) => { setter(value); setPage(1); setSelected(null) }
   const activeFilterCount = [stationFilter, subtypeFilter, equipmentFilter, sourceFilter, fromDate, toDate, search].filter(Boolean).length
 
   return <div className="events-history-page">
-    <PageTitle eyebrow="Operations" title="Events & History" description="Explore messages and historical activity across accessible LiftIQ assets." />
+    <PageTitle eyebrow="Operations" title="Events & History" description="Explore historical messages and operational events across your accessible LiftIQ assets." />
     <section className="events-explorer surface" aria-label="Events and history message explorer">
       <div className="events-explorer-header">
         <div><h2>Unified history</h2><p>Inspect what was reported, when, and for which asset. Source records and alarm lifecycle history retain their distinct origins.</p></div>
         <button className="btn soft" disabled={!filtered.length} onClick={() => { downloadCsv(filtered); onToast(`Downloaded ${filtered.length} filtered history records.`) }}>↓ Export filtered CSV</button>
       </div>
-      <div className="events-category-tabs" role="tablist" aria-label="Message category">
+      <div className="events-category-tabs" aria-label="Message category">
         {categoryFilters.map(item => {
-          const count = item === 'All messages' ? records.length : item === 'Alarm messages' ? alarmCount : item === 'Event messages' ? eventCount : telemetryCount
-          return <button key={item} role="tab" aria-selected={category === item} className={category === item ? 'active' : ''} onClick={() => { setCategory(item); setPage(1); setSelected(null); setSubtypeFilter('') }}>{item}<span>{count}</span></button>
+          const count = item.key ? categoryCounts.get(item.key) || 0 : matchingFilters.length
+          return <button key={item.label} type="button" aria-pressed={category.label === item.label} className={category.label === item.label ? 'active' : ''} onClick={() => { setCategory(item); setPage(1); setSelected(null); setSubtypeFilter('') }}>{item.label}<span>{count}</span></button>
         })}
       </div>
       <div className="events-explorer-filters">
@@ -202,12 +208,12 @@ export function EventsHistoryPage({ alarms, onOpenAlarms, onOpenStation, onToast
       {!filtered.length ? <Empty title="No matching history records" detail="Try another category or adjust the filters. A missing record is not interpreted as a normal state." /> : <div className="events-table-panel">
         <div className="events-table-scroll"><table className="events-table events-explorer-table"><thead><tr>{columns.map(column => <th key={column.key}>{column.label}</th>)}<th>Details</th></tr></thead><tbody>
           {visible.map(record => <tr key={record.id} className={selected?.id === record.id ? 'selected' : ''}>
-            <td>{formatTime(record.occurredAt)}</td><td><strong>{record.station}</strong></td><td><strong>{record.title}</strong><small className="events-row-summary">{record.summary}</small></td><td>{record.equipment}</td><td><span className={`events-type-pill ${record.category.toLowerCase().replaceAll(/[^a-z]+/g, '-')}`}>{record.category}</span></td><td>{record.source}</td><td><button className="events-row-action" onClick={() => setSelected(record)}>View →</button></td>
+            <td>{formatTime(record.occurredAt)}</td><td><strong>{record.station}</strong></td><td><strong>{record.title}</strong><small className="events-row-summary">{record.summary}</small></td><td>{record.equipment}</td><td><span className={`events-type-pill ${record.categories[0].toLowerCase()}`}>{record.category}</span></td><td>{record.source}</td><td><button className="events-row-action" onClick={() => setSelected(record)}>View →</button></td>
           </tr>)}
         </tbody></table></div>
         <div className="events-pagination"><label>Rows per page <select value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1) }}><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option></select></label><span>{filtered.length} records · Page {currentPage} of {pageCount}</span><button disabled={currentPage <= 1} onClick={() => setPage(Math.max(1, currentPage - 1))}>‹</button><button disabled={currentPage >= pageCount} onClick={() => setPage(Math.min(pageCount, currentPage + 1))}>›</button></div>
       </div>}
-      <div className="events-prototype-note"><b>Data coverage</b><span>Alarm lifecycle events and supplied station report samples are shown. Station-list records are snapshots, not a retained raw-message archive. Original wire payloads and protocol subtype definitions are not available in this prototype. Use the station’s <button onClick={() => onOpenStation('Trends')}>Measurements & Trends</button> view for charts.</span></div>
+      <div className="events-prototype-note"><b>Data coverage</b><span>Counts update with the active filters; status and telemetry counts can overlap because one scheduled report contains both. Alarm lifecycle history is kept distinct from station-reported reasons. Results use local prototype data; this frontend does not enforce server-side asset authorization. Station-list records are snapshots, not a retained raw-message archive; original wire payloads and protocol subtype definitions are unavailable. Use the station’s <button onClick={() => onOpenStation('Trends')}>Measurements & Trends</button> view for charts.</span></div>
       {selected && <RecordDetails row={selected} onClose={() => setSelected(null)} onOpenAlarms={onOpenAlarms} onOpenStation={onOpenStation} />}
     </section>
   </div>
@@ -221,9 +227,9 @@ function RecordDetails({ row, onClose, onOpenAlarms, onOpenStation }: {
 }) {
   return <aside className="events-detail-panel" aria-label="Selected history record details">
     <div className="events-detail-heading"><div><small>{row.recordType}</small><h3>{row.title}</h3></div><button onClick={onClose} aria-label="Close record details">×</button></div>
-    <div className="events-detail-summary"><b>{row.station} · {row.equipment}</b><span className={`events-type-pill ${row.category.toLowerCase().replaceAll(/[^a-z]+/g, '-')}`}>{row.category}</span><p>{row.summary}</p></div>
+    <div className="events-detail-summary"><b>{row.station} · {row.equipment}</b><span className={`events-type-pill ${row.categories[0].toLowerCase()}`}>{row.category}</span><p>{row.summary}</p></div>
     <dl className="events-detail-list"><div><dt>Timestamp</dt><dd>{formatTime(row.occurredAt)}</dd></div><div><dt>Subtype / reason</dt><dd>{row.subtype}</dd></div><div><dt>Source</dt><dd>{row.source}</dd></div>{Object.entries(row.fields).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>
     <div className="events-detail-evidence"><b>Record context</b><p>{row.note}</p></div>
-    <div className="events-detail-actions">{row.category === 'Alarm' && <button className="btn soft" onClick={onOpenAlarms}>Open alarm history</button>}{row.station === station.id && <button className="btn primary" onClick={() => onOpenStation('Trends')}>Open station trends</button>}</div>
+    <div className="events-detail-actions">{row.categories.includes('Alarm') && <button className="btn soft" onClick={onOpenAlarms}>Open alarm history</button>}{row.station === station.id && <button className="btn primary" onClick={() => onOpenStation('Trends')}>Open station trends</button>}</div>
   </aside>
 }
