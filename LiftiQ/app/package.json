@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "tsc --ignoreConfig src/logic/personalization.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .test-dist --skipLibCheck && node tests/personalization.test.mjs && rm -rf .test-dist"
+    "test": "tsc --ignoreConfig src/logic/personalization.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .test-dist --skipLibCheck && tsc --ignoreConfig src/integrations/notifications/liftiqEvent.ts --target ES2022 --module ES2022 --moduleResolution bundler --types vite/client --rootDir src --outDir .test-dist --skipLibCheck && node --test tests/personalization.test.mjs tests/liftiqEvent.test.mjs && rm -rf .test-dist"
   },
   "dependencies": {
     "react": "19.3.1",
