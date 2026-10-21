@@ -7,11 +7,11 @@ export const PERSONALIZATION_STORAGE_KEY = `liftiq.personalization.v1.${PERSONAL
 
 export type ActivityType = 'page_viewed' | 'asset_viewed' | 'asset_tab_viewed' | 'filter_applied' | 'saved_view_created' | 'saved_view_opened' | 'shortcut_used' | 'suggestion_opened' | 'suggestion_dismissed' | 'home_layout_changed' | 'home_action' | 'asset_opened_from_home' | 'asset_opened_from_dashboard'
 export interface ActivityEvent { id:string; type:ActivityType; at:string; sessionId:string; pageId:string; assetId?:string; metadata?:Record<string,string|number|boolean> }
-export interface SavedView { id:string; pageId:'notifications'; name:string; filters:NotificationFilters; updatedAt:string }
+export interface SavedView { id:string; pageId:'notifications'; name:string; filters:NotificationFilters; updatedAt:string; lastUsedAt?:string }
 export interface NotificationFilters { query:string; type:string; read:string }
-export interface PersonalizationState { version:1; events:ActivityEvent[]; pinnedAssetIds:string[]; savedViews:SavedView[]; lastNotificationFilters:NotificationFilters; defaultLanding:'dashboard'|'personalized'; landingPromptDismissed:boolean; sectionOrder:string[]; dismissedSuggestions:string[] }
+export interface PersonalizationState { version:1; events:ActivityEvent[]; pinnedAssetIds:string[]; savedViews:SavedView[]; lastNotificationFilters:NotificationFilters; defaultLanding:'dashboard'|'personalized'; landingPromptDismissed:boolean; sectionOrder:string[]; dismissedSuggestions:string[]; suggestionsEnabled?:boolean; inferenceResetAt?:string }
 export const DEFAULT_NOTIFICATION_FILTERS:NotificationFilters={query:'',type:'',read:''}
-export const DEFAULT_PERSONALIZATION:PersonalizationState={version:1,events:[],pinnedAssetIds:[],savedViews:[],lastNotificationFilters:DEFAULT_NOTIFICATION_FILTERS,defaultLanding:'dashboard',landingPromptDismissed:false,sectionOrder:['recent','frequent','pages','views'],dismissedSuggestions:[]}
+export const DEFAULT_PERSONALIZATION:PersonalizationState={version:1,events:[],pinnedAssetIds:[],savedViews:[],lastNotificationFilters:DEFAULT_NOTIFICATION_FILTERS,defaultLanding:'dashboard',landingPromptDismissed:false,sectionOrder:['recent','frequent','pages','views'],dismissedSuggestions:[],suggestionsEnabled:true}
 export const PERSONALIZATION_WINDOWS={recentDays:3,sustainedDays:28,longTermDays:90} as const
 export const LANDING_RECOMMENDATION_THRESHOLD={homeSessions:5,distinctDays:3} as const
 
@@ -30,6 +30,8 @@ export function loadPersonalization():PersonalizationState{
       dismissedSuggestions:Array.isArray(parsed.dismissedSuggestions)?parsed.dismissedSuggestions.filter((x):x is string=>typeof x==='string'):[],
       defaultLanding:parsed.defaultLanding==='personalized'?'personalized':'dashboard',
       landingPromptDismissed:parsed.landingPromptDismissed===true,
+      suggestionsEnabled:parsed.suggestionsEnabled!==false,
+      inferenceResetAt:typeof parsed.inferenceResetAt==='string'?parsed.inferenceResetAt:undefined,
     }
   }catch{return structuredClone(DEFAULT_PERSONALIZATION)}
 }

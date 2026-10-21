@@ -10,6 +10,7 @@ import {
 import type { AlarmLifecycle } from '../data/model'
 import { AlarmPage } from './AlarmPage'
 import type { ManualCompletion } from './AlarmPage'
+import { formatDate } from '../components/UI'
 
 const tabs = [
   'Overview',
@@ -493,6 +494,15 @@ export function StationPage({
                 </>
               )
             })()}
+            <section className="similar-situations-panel surface" aria-labelledby="similar-title">
+              <div className="similar-heading"><div><h3 id="similar-title">Find Similar Situations</h3><p>Historical alarm records for {pumps[selectedPump]?.name || `Pump ${selectedPump + 1}`} at {station.id}. Component match is not evidence of a shared cause.</p></div><span className="subtle-chip-blue">Prototype · local history</span></div>
+              {(() => {
+                const pumpName = pumps[selectedPump]?.name || `Pump ${selectedPump + 1}`
+                const records = alarms.filter(item => item.station === station.id && item.component.toLowerCase() === pumpName.toLowerCase() && ['Completed', 'Stale', 'Recovery review'].includes(item.status)).sort((a, b) => b.startedAt.localeCompare(a.startedAt)).slice(0, 3)
+                return records.length ? <div className="similar-record-list">{records.map(record => <div className="similar-record" key={record.id}><div><b>{record.name}</b><small>{record.id} · {formatDate(record.startedAt)} · {record.status}</small><small>Recorded outcome: {record.resolution ? `${record.resolution}${record.resolvedAt ? ` · ${formatDate(record.resolvedAt)}` : ''}` : 'No confirmed outcome recorded'}</small></div><span className={`similar-status ${record.status === 'Completed' ? 'done' : 'unknown'}`}>{record.status === 'Completed' ? 'Recorded complete' : 'Unconfirmed'}</span></div>)}</div> : <div className="similar-empty">No comparable component records are available in the loaded alarm history.</div>
+              })()}
+              <button className="card-action-link" onClick={() => changeTab('Alarms')}>Open station alarm history →</button>
+            </section>
           </div>
         )}
 

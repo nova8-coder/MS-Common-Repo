@@ -11,6 +11,7 @@ import { WatchModePage } from './pages/WatchModePage'
 import { initialAlarms, initialNotifications, initialPreferences, station } from './data/mockData'
 import type { AlarmLifecycle, MuteRule, NotificationItem } from './data/model'
 import { NotificationBell } from './components/NotificationBell'
+import { AskLiftIQ } from './components/AskLiftIQ'
 import { mapAlarmsToNotificationPreviews } from './integrations/notifications/liftiqEvent'
 import { acknowledgeLifecycle, manuallyCompleteLifecycle } from './logic/alarmLifecycle'
 import {
@@ -177,9 +178,14 @@ export default function App() {
     notify('Notification view saved for this demo user.')
   }
 
-  const openNotificationView = (filters: NotificationFilters) => {
+  const openSavedNotificationView = (filters: NotificationFilters, viewId?: string) => {
     const valid = validateNotificationFilters(filters)
-    setPersonalization(prev => ({ ...prev, lastNotificationFilters: valid }))
+    const usedAt = new Date().toISOString()
+    setPersonalization(prev => ({
+      ...prev,
+      lastNotificationFilters: valid,
+      savedViews: viewId ? prev.savedViews.map(view => view.id === viewId ? { ...view, lastUsedAt: usedAt } : view) : prev.savedViews,
+    }))
     setRoute('notifications')
     setSelectedAlarm(null)
   }
@@ -321,6 +327,13 @@ export default function App() {
           </span>
 
           <NotificationBell previews={mapAlarmsToNotificationPreviews(alarms)} />
+          <AskLiftIQ
+            alarms={alarms}
+            savedViews={personalization.savedViews}
+            onNavigate={navigate}
+            onOpenStation={openStation}
+            onOpenSavedView={openSavedNotificationView}
+          />
 
           {/* User profile with switcher */}
           <button
@@ -361,40 +374,16 @@ export default function App() {
                 navigate(page as Route)
               }}
               onOpenStation={openStation}
-              onOpenAlarm={id => {
-                track('home_action', 'personalized-home', { destination: 'alarm' }, id)
-                setSelectedAlarm(id)
-              }}
-              onPin={assetId => {
-                const pinned = personalization.pinnedAssetIds.includes(assetId)
-                setPersonalization(prev => ({
-                  ...prev,
-                  pinnedAssetIds: pinned
-                    ? prev.pinnedAssetIds.filter(id => id !== assetId)
-                    : [...prev.pinnedAssetIds, assetId],
-                }))
-                track(
-                  'home_layout_changed',
-                  'personalized-home',
-                  { action: pinned ? 'asset_unpinned' : 'asset_pinned', assetId },
-                  assetId
-                )
-              }}
-              onOpenView={openNotificationView}
-              onSaveView={saveNotificationView}
-              onDeleteView={id =>
-                setPersonalization(prev => ({
-                  ...prev,
-                  savedViews: prev.savedViews.filter(view => view.id !== id),
-                }))
-              }
+              onOpenAlarm={setSelectedAlarm}
+              onOpenView={openSavedNotificationView}
+              onDeleteView={id => setPersonalization(prev => ({ ...prev, savedViews: prev.savedViews.filter(view => view.id !== id) }))}
               onMakeDefault={setLandingDefault}
-              onDismissDefault={() => {
-                track('suggestion_dismissed', 'personalized-home', { suggestionId: 'landing-default' })
-                setPersonalization(prev => ({ ...prev, landingPromptDismissed: true }))
-              }}
-              onReset={() => setPersonalization(structuredClone(DEFAULT_PERSONALIZATION))}
-              onReorder={order => setPersonalization(prev => ({ ...prev, sectionOrder: order }))}
+              onPin={assetId => setPersonalization(prev => {
+                const pinned = prev.pinnedAssetIds.includes(assetId)
+                return { ...prev, pinnedAssetIds: pinned ? prev.pinnedAssetIds.filter(id => id !== assetId) : [...prev.pinnedAssetIds, assetId] }
+              })}
+              onSetSuggestions={enabled => setPersonalization(prev => ({ ...prev, suggestionsEnabled: enabled }))}
+              onResetInferred={() => setPersonalization(prev => ({ ...prev, events: [], inferenceResetAt: new Date().toISOString() }))}
               onActivity={onPersonalizationActivity}
             />
           )}
@@ -463,6 +452,7 @@ export default function App() {
             <EventsHistoryPage
               alarms={alarms}
               onOpenAlarms={() => navigate('alarms')}
+              onOpenStation={openStation}
               onToast={notify}
             />
           )}
