@@ -7,8 +7,10 @@ import { NotificationsPage } from './pages/NotificationsPage'
 import { StationPage } from './pages/StationPage'
 import { StationsListPage } from './pages/StationsListPage'
 import { EventsHistoryPage } from './pages/EventsHistoryPage'
-import { initialAlarms, initialNotifications, initialPreferences } from './data/mockData'
+import { initialAlarms, initialNotifications, initialPreferences, station } from './data/mockData'
 import type { AlarmLifecycle, MuteRule, NotificationItem } from './data/model'
+import { NotificationBell } from './components/NotificationBell'
+import { mapAlarmsToNotificationPreviews } from './integrations/notifications/liftiqEvent'
 import { acknowledgeLifecycle, manuallyCompleteLifecycle } from './logic/alarmLifecycle'
 import {
   appendActivity,
@@ -56,6 +58,17 @@ export default function App() {
   const unreadNoticesCount = notices.filter(n => n.unread).length
 
   useEffect(() => persistPersonalization(personalization), [personalization])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const linkedStation = params.get('station')
+    if (linkedStation !== station.id) return
+    const requestedTab = params.get('tab') || 'Overview'
+    const supportedTabs = ['Overview', 'Visual Twin', 'Messages', 'Events', 'Alarms', 'Trends', 'Totalizer', 'Commands', 'Command History', 'Maintenance', 'Pump Health', 'Configs']
+    setRoute('stations')
+    setStationSelected(true)
+    setStationTab(supportedTabs.includes(requestedTab) ? requestedTab : 'Overview')
+  }, [])
 
   useEffect(() => {
     const page = route === 'personalized' ? 'personalized-home' : route
@@ -304,18 +317,7 @@ export default function App() {
             Local prototype · no live device connection
           </span>
 
-          {/* Notifications shortcut bell */}
-          <button
-            className="topbar-bell-btn"
-            onClick={() => navigate('notifications')}
-            title="Notifications"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            {unreadNoticesCount > 0 && <span className="bell-badge-dot" />}
-          </button>
+          <NotificationBell previews={mapAlarmsToNotificationPreviews(alarms)} />
 
           {/* User profile with switcher */}
           <button

@@ -291,6 +291,22 @@ a {
   color: #0a7cd8;
 }
 
+.integration-notification-menu { position: relative; }
+.integration-notification-menu > summary { list-style: none; cursor: pointer; }
+.integration-notification-menu > summary::-webkit-details-marker { display: none; }
+.integration-notification-menu[open] > summary { background: #eaf4fc; color: #0866b3; }
+.integration-bell-count { position: absolute; top: -3px; right: -5px; min-width: 16px; height: 16px; display: grid; place-items: center; padding: 0 4px; border: 2px solid #fff; border-radius: 12px; background: #c83b43; color: white; font-size: 9px; font-weight: 700; line-height: 1; }
+.integration-notification-dropdown { position: absolute; top: calc(100% + 9px); right: 0; width: min(350px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: #fff; box-shadow: 0 12px 32px #102a4c26; z-index: 50; }
+.integration-notification-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 5px 10px; color: #102a4c; font-size: 12px; }
+.integration-notification-heading span { border-radius: 10px; padding: 3px 6px; background: #fff4dd; color: #94630d; font-size: 8px; font-weight: 800; letter-spacing: .5px; }
+.integration-notification-preview { display: grid; gap: 4px; padding: 10px 6px; border-top: 1px solid #edf1f5; color: #30475f; }
+.integration-notification-preview:hover, .integration-notification-all:hover { background: #f5f9fc; }
+.integration-notification-preview b { font-size: 10px; line-height: 1.45; }
+.integration-notification-preview small, .integration-notification-footnote { color: #7a899a; font-size: 9px; overflow-wrap: anywhere; }
+.integration-notification-empty { padding: 8px 6px; color: #748498; font-size: 10px; }
+.integration-notification-all { display: block; padding: 10px 6px; border-top: 1px solid #edf1f5; color: #1769a9; font-size: 10px; font-weight: 700; }
+.integration-notification-footnote { display: block; padding: 3px 6px 1px; }
+
 .bell-badge-dot {
   position: absolute;
   top: 6px;
