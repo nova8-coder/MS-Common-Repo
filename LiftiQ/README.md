@@ -21,6 +21,8 @@ Create a production build with `npm run build` and preview it with `npm run prev
 
 All interactions are local to this prototype. It has no backend, does not send notifications, and does not control real devices. Mock values are identified in the UI where the source material is incomplete.
 
+The station banner summarizes supplied unresolved alarm and pump-fault records and lists the sample pump states/roles. It shows the source reporting label and timestamp without calculating live freshness or an aggregate device-health diagnosis. See [LiftIQ current-state and UX notes](../docs/liftiq/CURRENT_STATE.md).
+
 ## Personalized Home prototype
 
 Personalized Home is a separate navigation destination. Dashboard remains the initial default unless the demo user explicitly changes it in Personalized Home. The new page can remember the last notification filter, save/delete notification views, pin the sample station, reorder optional sections, and suggest repeated filters or pages after use across multiple sessions. Critical alarm lifecycles stay in a fixed operational section outside the reorderable content.
@@ -56,6 +58,6 @@ No backend, schema, message-processing pipeline, or new protocol behavior was ad
 
 ## AssetIQ Notification app prototype integration
 
-LiftIQ remains a separate app from `../AssetIQ-Notifications`. The top-bar bell opens the notification inbox and previews only supported active mock alarm lifecycles. The local integration contract and mapper are in `app/src/integrations/notifications/liftiqEvent.ts`; the inbox app has a matching structural contract and a deterministic `LC-1042` fixture. There is no shared runtime state or live event/API integration. See [the notification app integration notes](../docs/integration/INTEGRATION.md) for exact commands, ports, event support, and data gaps.
+LiftIQ remains a separate app from `../AssetIQ-Notifications`. The top-bar bell opens the notification inbox and previews only supported active mock alarm lifecycles. The local integration contract and mapper are in `app/src/integrations/notifications/liftiqEvent.ts`; it includes active/acknowledged source state and retains device observation IDs and timestamps for the supported lifecycle. The inbox app has a matching structural contract and a deterministic `LC-1042` fixture. There is no shared runtime state or live event/API integration. See [the integration notes](../docs/integration/INTEGRATION.md) and [LiftIQ current-state notes](../docs/liftiq/CURRENT_STATE.md).
 
 Run the personalization ranking tests with `npm test` from `app/`.

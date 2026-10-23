@@ -43,7 +43,7 @@ function thread(
   const sourceEvent: NotificationThread['event'] = {
     eventId: `evt-${id}`, sourceApplication: product, tenantId, assetId, equipmentId, eventType,
     sourceLifecycleId: lifecycle, severity, occurredAt, receivedAt: time, correlationKey: `${tenantId}:${assetId}:${lifecycle}`,
-    state: status === 'Resolved' ? 'recovered' : status === 'Acknowledged' ? 'acknowledged' : 'active',
+    sourceState: status === 'Resolved' ? 'recovered' : 'active',
     sourceReference: `/${product.toLowerCase()}/source-record/${id}`, metadata: { summary },
   }
   const recipientNames = tenantId === orgs.city ? ['Subashini K', 'LiftIQ Operations Team'] : ['Nandhini M', 'County Monitoring Team']

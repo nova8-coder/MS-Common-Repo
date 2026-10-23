@@ -11,8 +11,14 @@ export const liftIQMockEvents: LiftIQEvent[] = [
     tenantId: 'org-city-water',
     stationId: 'NOVA_02',
     occurredAt: '2026-10-12T10:04:12',
+    sourceState: 'active',
     severity: 'high',
     summary: 'Wet well level reached 70.2 in (threshold: 70 in).',
+    observations: [
+      { eventId: 'e-1042-1', occurredAt: '2026-10-12T10:04:12', summary: 'Wet well level reached 70.2 in (threshold: 70 in).' },
+      { eventId: 'e-1042-2', occurredAt: '2026-10-12T10:08:45', summary: 'Wet well level still above 70 in (71.4 in).' },
+      { eventId: 'e-1042-3', occurredAt: '2026-10-12T11:20:16', summary: 'Wet well level 71.8 in.' },
+    ],
     detailsUrl: buildLiftIQStationUrl('NOVA_02', 'Alarms'),
   },
 ]

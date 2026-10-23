@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, NavLink, Outlet, Route, Routes, useOutletContext } from 'react-router-dom'
-import { Activity, AlertOctagon, Bell, BellRing, Building2, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, FileClock, Inbox, ListChecks, Mail, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Users, X } from 'lucide-react'
+import { Activity, Bell, BellRing, Building2, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, FileClock, Inbox, ListChecks, Mail, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Users, X } from 'lucide-react'
 import { initialAudit, initialGroups, initialRules, initialThreads, organizations, recipients, sourceEventCatalog } from './data/mock'
-import type { AuditEntry, Channel, NotificationRule, NotificationThread, Product, RecipientGroup, Severity, ThreadStatus, UserRole } from './data/types'
+import type { AuditEntry, Channel, NotificationRule, NotificationThread, Product, RecipientGroup, Severity, UserRole } from './data/types'
 import { simulateAcknowledge, simulateSnooze, updateThread, visibleThreads } from './services/mockService'
 import { liftIQMockEvents } from './integrations/liftiq/mockEvents'
 import { mergeLiftIQThreads } from './services/liftiqAdapter'
@@ -20,8 +20,8 @@ const useApp = () => useOutletContext<Context>()
 const products: Product[] = ['LiftIQ', 'TankIQ', 'FlowIQ', 'ReeferIQ', 'CloudIQ']
 const severities: Severity[] = ['Critical', 'High', 'Medium', 'Low', 'Informational']
 const roles: UserRole[] = ['Platform Administrator', 'Tenant Administrator', 'Operations User', 'Read-only Monitor']
-const tabs: Array<{ value: 'All' | 'Unread' | 'Active' | 'Acknowledged' | 'Resolved'; label: string }> = [
-  { value: 'All', label: 'All notifications' }, { value: 'Unread', label: 'Unread' }, { value: 'Active', label: 'Active' }, { value: 'Acknowledged', label: 'Acknowledged' }, { value: 'Resolved', label: 'Resolved' },
+const tabs: Array<{ value: 'All' | 'Unread' | 'Active' | 'Acknowledged' | 'Resolved' | 'Snoozed'; label: string }> = [
+  { value: 'All', label: 'All' }, { value: 'Unread', label: 'Unread' }, { value: 'Active', label: 'Active' }, { value: 'Acknowledged', label: 'Acknowledged' }, { value: 'Resolved', label: 'Resolved' }, { value: 'Snoozed', label: 'Snoozed' },
 ]
 
 const nav = [
@@ -101,9 +101,7 @@ function InboxPage() {
   const [query, setQuery] = useState('')
   const [product, setProduct] = useState('All applications')
   const [severity, setSeverity] = useState('All severities')
-  const [status, setStatus] = useState('All statuses')
   const [period, setPeriod] = useState('Any time')
-  const [asset, setAsset] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const scoped = visibleThreads(threads, organizationId)
   const selected = scoped.find(t => t.id === selectedId)
@@ -118,12 +116,11 @@ function InboxPage() {
     if (q && ![t.title, t.description, t.event.assetId, t.event.sourceApplication, t.event.equipmentId ?? ''].some(value => value.toLowerCase().includes(q))) return false
     if (product !== 'All applications' && t.event.sourceApplication !== product) return false
     if (severity !== 'All severities' && t.event.severity !== severity) return false
-    if (status !== 'All statuses' && t.status !== status) return false
-    if (asset && !t.event.assetId.toLowerCase().includes(asset.toLowerCase())) return false
     if (tab === 'Unread' && !t.unread) return false
     if (tab === 'Active' && t.status !== 'Active') return false
     if (tab === 'Acknowledged' && t.status !== 'Acknowledged') return false
     if (tab === 'Resolved' && t.status !== 'Resolved') return false
+    if (tab === 'Snoozed' && t.status !== 'Snoozed') return false
     if (period === 'Last 24 hours' && Date.now() - Date.parse(t.lastObservedAt) > 86_400_000) return false
     if (period === 'Last 7 days' && Date.now() - Date.parse(t.lastObservedAt) > 7 * 86_400_000) return false
     return true
@@ -144,12 +141,7 @@ function InboxPage() {
 
   return <>
     <PageHeading eyebrow="Shared operations" title="Notification Inbox" description="Triage important notifications from across AssetIQ applications." action={<span className="simulated-note"><BellRing size={15} /> Simulated events · no live delivery</span>} />
-    <div className="summary-strip">
-      <Summary icon={<Bell size={17} />} label="Unread" value={counts.unread} tone="blue" />
-      <Summary icon={<Activity size={17} />} label="Active incidents" value={counts.active} tone="red" />
-      <Summary icon={<AlertOctagon size={17} />} label="Critical" value={counts.critical} tone="amber" />
-      <Summary icon={<Mail size={17} />} label="Failed delivery attempts" value={counts.failed} tone="slate" />
-    </div>
+    <div className="inbox-overview"><b>{counts.unread} unread</b><span>{counts.active} active notification threads</span><span>{counts.critical} critical</span><span>{counts.failed} failed simulated attempts</span></div>
     <section className="panel inbox-panel">
       <div className="inbox-toolbar">
         <div className="tabs">{tabs.map(item => <button key={item.value} className={tab === item.value ? 'active' : ''} onClick={() => setTab(item.value)}>{item.label}{item.value === 'Unread' && counts.unread > 0 && <b>{counts.unread}</b>}</button>)}</div>
@@ -159,10 +151,8 @@ function InboxPage() {
         <label className="search-field"><Search size={15} /><input placeholder="Search notifications or assets" value={query} onChange={e => setQuery(e.target.value)} /></label>
         <select value={product} onChange={e => setProduct(e.target.value)} aria-label="Filter by application"><option>All applications</option>{products.map(p => <option key={p}>{p}</option>)}</select>
         <select value={severity} onChange={e => setSeverity(e.target.value)} aria-label="Filter by severity"><option>All severities</option>{severities.map(s => <option key={s}>{s}</option>)}</select>
-        <select value={status} onChange={e => setStatus(e.target.value)} aria-label="Filter by status"><option>All statuses</option>{(['Active', 'Acknowledged', 'Resolved', 'Snoozed'] as ThreadStatus[]).map(s => <option key={s}>{s}</option>)}</select>
         <select value={period} onChange={e => setPeriod(e.target.value)} aria-label="Filter by time"><option>Any time</option><option>Last 24 hours</option><option>Last 7 days</option></select>
-        <input className="asset-filter" placeholder="Asset" value={asset} onChange={e => setAsset(e.target.value)} aria-label="Filter by asset" />
-        <button className="button button-quiet" onClick={() => { setQuery(''); setProduct('All applications'); setSeverity('All severities'); setStatus('All statuses'); setPeriod('Any time'); setAsset(''); setTab('All') }}><X size={14} /> Clear</button>
+        <button className="button button-quiet" onClick={() => { setQuery(''); setProduct('All applications'); setSeverity('All severities'); setPeriod('Any time'); setTab('All') }}><X size={14} /> Clear</button>
       </div>
       <div className="results-caption">{filtered.length} notification {filtered.length === 1 ? 'thread' : 'threads'} <span>· Repeated observations are grouped into a single thread</span></div>
       <div className="notification-list">
@@ -179,6 +169,11 @@ function RulesPage() {
   const [query, setQuery] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
+  const [productChoice, setProductChoice] = useState<Product>('LiftIQ')
+  const [eventTypeChoice, setEventTypeChoice] = useState(sourceEventCatalog.LiftIQ[0])
+  const [severityChoice, setSeverityChoice] = useState<Severity>('High')
+  const [recipientGroupChoice, setRecipientGroupChoice] = useState('g-ops')
+  const eligibleGroups = groups.filter(group => group.organizationId === organizationId && group.enabled && group.products.includes(productChoice))
   const scoped = rules.filter(rule => {
     const group = groups.find(item => item.id === rule.recipientGroupId)
     return role === 'Platform Administrator' || group?.organizationId === organizationId
@@ -193,29 +188,33 @@ function RulesPage() {
   }
   const createRule = (event: FormEvent) => {
     event.preventDefault()
-    const group = groups.find(item => item.organizationId === organizationId && item.enabled)
+    const group = eligibleGroups.find(item => item.id === recipientGroupChoice)
     if (!name.trim() || !group) return
-    const product = group.products[0] ?? initialRules[0].product
-    const rule: NotificationRule = { ...initialRules[0], id: `r-${Date.now()}`, name: name.trim(), product, eventType: sourceEventCatalog[product]?.[0] ?? initialRules[0].eventType, recipientGroupId: group.id, scope: 'All accessible assets', updatedAt: new Date().toISOString() }
+    const rule: NotificationRule = {
+      ...initialRules[0], id: `r-${Date.now()}`, name: name.trim(), description: 'Prototype rule. Incoming event processing is not connected.',
+      product: productChoice, eventType: eventTypeChoice, severity: severityChoice, recipientGroupId: group.id,
+      scope: group.name, channels: [...group.channels], cooldownMinutes: 0, reminderMinutes: 0, maxReminders: 0,
+      escalationMinutes: 0, recoveryNotification: false, enabled: true, updatedAt: new Date().toISOString(),
+    }
     setRules(current => [rule, ...current])
-    addAudit('Rule created', rule.name, 'Created a notification rule from the prototype defaults.')
+    addAudit('Rule created', rule.name, 'Created a local condition and recipient mapping. Event evaluation and delivery are not connected.')
     setName(''); setShowForm(false); toast('Rule created in this prototype.')
   }
   return <>
-    <PageHeading eyebrow="Configuration" title="Notification Rules" description="Choose which source events create notifications, who receives them, and how reminders escalate." action={<button className="button button-primary" disabled={!canEdit} onClick={() => setShowForm(true)}><Plus size={15} /> New rule</button>} />
-    <div className="summary-strip"><Summary icon={<ListChecks size={17} />} label="Rules in scope" value={scoped.length} tone="blue" /><Summary icon={<BellRing size={17} />} label="Enabled" value={scoped.filter(rule => rule.enabled).length} tone="green" /><Summary icon={<Clock3 size={17} />} label="Escalation configured" value={scoped.filter(rule => rule.escalationMinutes > 0).length} tone="amber" /></div>
+    <PageHeading eyebrow="Configuration" title="Notification Rules" description="Match a source condition to a recipient group. Timing and delivery controls are examples only in this prototype." action={<button className="button button-primary" disabled={!canEdit} onClick={() => setShowForm(true)}><Plus size={15} /> New rule</button>} />
+    <div className="prototype-rule-note"><ShieldCheck size={16} /><span><b>Prototype behavior:</b> rules can be edited locally, but incoming events are not evaluated and cooldowns, reminders, escalations, recovery routing, and provider delivery are not enforced. Stable lifecycle IDs group the supplied LiftIQ observations; source alarm state remains owned by LiftIQ.</span></div>
     <section className="panel"><div className="panel-toolbar"><label className="search-field"><Search size={15} /><input placeholder="Search rules" value={query} onChange={event => setQuery(event.target.value)} /></label><span className="view-label"><ShieldCheck size={14} /> Scoped to {organizations.find(org => org.id === organizationId)?.name}</span></div>
-      <div className="table-wrap"><table><thead><tr><th>Rule</th><th>Application / event</th><th>Recipients</th><th>Channels</th><th>Timing</th><th>Status</th></tr></thead><tbody>{scoped.map(rule => { const group = groups.find(item => item.id === rule.recipientGroupId); return <tr key={rule.id}><td><b>{rule.name}</b><small>{rule.description}</small></td><td><span className="product-chip">{rule.product}</span><small>{rule.eventType} · {rule.severity}</small></td><td>{group?.name ?? 'Unavailable'}<small>{rule.scope}</small></td><td>{rule.channels.join(', ')}</td><td><small>Cooldown {rule.cooldownMinutes}m</small><small>Reminder {rule.reminderMinutes || 'Off'}m · Escalation {rule.escalationMinutes || 'Off'}m</small></td><td><div className="status-control"><span className={`badge ${rule.enabled ? 'status-active' : 'status-resolved'}`}>{rule.enabled ? 'Enabled' : 'Disabled'}</span><Toggle checked={rule.enabled} onChange={() => toggleRule(rule.id)} label={`${rule.enabled ? 'Disable' : 'Enable'} ${rule.name}`} disabled={!canEdit} /></div></td></tr> })}</tbody></table>{scoped.length === 0 && <EmptyState title="No rules found" detail="Try another search or organization." />}</div>
+      <div className="table-wrap"><table><thead><tr><th>Condition</th><th>Noise handling</th><th>Delivery policy</th><th>Status</th></tr></thead><tbody>{scoped.map(rule => { const group = groups.find(item => item.id === rule.recipientGroupId); return <tr key={rule.id}><td><b>{rule.name}</b><small><span className="product-chip">{rule.product}</span> · {rule.eventType} · {rule.severity}</small><small>{rule.scope}</small></td><td><b>Group by source lifecycle</b><small>Stable lifecycle grouping is applied to supplied fixtures.</small>{rule.cooldownMinutes > 0 && <small>Cooldown {rule.cooldownMinutes}m · display only</small>}{(rule.reminderMinutes > 0 || rule.escalationMinutes > 0) && <small>Reminder {rule.reminderMinutes || 'Off'}m · escalation {rule.escalationMinutes || 'Off'}m · not enforced</small>}</td><td><b>{group?.name ?? 'Unavailable'}</b><small>{rule.channels.join(', ') || 'No channels selected'}</small><small>Routing is not executed by this prototype.</small></td><td><div className="status-control"><span className={`badge ${rule.enabled ? 'status-active' : 'status-resolved'}`}>{rule.enabled ? 'Enabled locally' : 'Disabled locally'}</span><Toggle checked={rule.enabled} onChange={() => toggleRule(rule.id)} label={`${rule.enabled ? 'Disable' : 'Enable'} ${rule.name}`} disabled={!canEdit} /></div></td></tr> })}</tbody></table>{scoped.length === 0 && <EmptyState title="No rules found" detail="Try another search or organization." />}</div>
     </section>
-    {showForm && <Modal title="Create notification rule" onClose={() => setShowForm(false)} footer={<><button className="button" onClick={() => setShowForm(false)}>Cancel</button><button className="button button-primary" form="rule-form" type="submit">Create rule</button></>}><form id="rule-form" onSubmit={createRule} className="form-stack"><label>Rule name<input required autoFocus value={name} onChange={event => setName(event.target.value)} placeholder="e.g. Critical station alarms" /></label><p className="form-note">The new rule uses the prototype's critical pump defaults and the first enabled recipient group for this organization. Refine its event and delivery policy in the production configuration service.</p></form></Modal>}
+    {showForm && <Modal title="Create notification rule" onClose={() => setShowForm(false)} footer={<><button className="button" onClick={() => setShowForm(false)}>Cancel</button><button className="button button-primary" form="rule-form" type="submit" disabled={!eligibleGroups.some(group => group.id === recipientGroupChoice)}>Create rule</button></>}><form id="rule-form" onSubmit={createRule} className="form-stack"><label>Rule name<input required autoFocus value={name} onChange={event => setName(event.target.value)} placeholder="e.g. Critical station alarms" /></label><label>1. Condition · application<select value={productChoice} onChange={event => { const next = event.target.value as Product; setProductChoice(next); setEventTypeChoice(sourceEventCatalog[next]?.[0] ?? ''); setRecipientGroupChoice(groups.find(group => group.organizationId === organizationId && group.enabled && group.products.includes(next))?.id ?? '') }}>{products.map(product => <option key={product}>{product}</option>)}</select></label><label>Event type<select required value={eventTypeChoice} onChange={event => setEventTypeChoice(event.target.value)}>{(sourceEventCatalog[productChoice] ?? []).map(eventType => <option key={eventType}>{eventType}</option>)}</select></label><label>Severity<select value={severityChoice} onChange={event => setSeverityChoice(event.target.value as Severity)}>{severities.map(severity => <option key={severity}>{severity}</option>)}</select></label><label>3. Delivery policy · recipient group<select required value={recipientGroupChoice} onChange={event => setRecipientGroupChoice(event.target.value)}>{eligibleGroups.map(group => <option key={group.id} value={group.id}>{group.name} · {group.channels.join(', ')}</option>)}</select></label><div className="form-note"><b>2. Noise handling · system behavior</b><br />Repeated source observations are grouped when they share a stable lifecycle ID. Cooldown, flapping, persistence, and storm protection are not evaluated by this prototype. Grouping never changes the source alarm.</div><div className="form-note">The rule is saved locally as an example. It will not evaluate events or send notifications.</div></form></Modal>}
   </>
 }
 
 function GroupsPage() {
   const { groups, setGroups, organizationId, role, addAudit } = useApp()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(initialGroups[0]?.id ?? null)
   const scoped = groups.filter(group => role === 'Platform Administrator' || group.organizationId === organizationId)
-  const selected = scoped.find(group => group.id === selectedId)
+  const selected = scoped.find(group => group.id === selectedId) ?? scoped[0]
   const people = recipients.filter(person => person.organizationId === organizationId)
   const canEdit = role !== 'Read-only Monitor'
   const updateGroup = (group: RecipientGroup, patch: Partial<RecipientGroup>, action: string) => {
@@ -289,7 +288,7 @@ function NotificationRow({ thread, selected, onSelect }: { thread: NotificationT
   const hasLiftIQLink = thread.event.sourceApplication === 'LiftIQ' && /^https?:\/\//.test(thread.event.sourceReference)
   return <div className={`notification-row ${thread.unread ? 'unread' : ''} ${selected ? 'selected' : ''}`}>
     <span className={`severity-bar ${thread.event.severity.toLowerCase()}`} />
-    <span className="notification-main"><button type="button" className="notification-main-button" onClick={onSelect}><span className="notification-title-line"><b>{thread.title}</b><SeverityBadge severity={thread.event.severity} />{thread.escalated && <span className="badge status-escalated">Escalated</span>}</span><span className="notification-description">{thread.description}</span></button><span className="notification-meta"><span className="product-chip">{thread.event.sourceApplication}</span>{hasLiftIQLink && thread.event.stationId ? <a className="notification-asset-link" href={thread.event.sourceReference}>{thread.event.stationId}{thread.event.equipmentId ? ` · ${thread.event.equipmentId}` : ''}</a> : <span>{thread.event.assetId}{thread.event.equipmentId ? ` · ${thread.event.equipmentId}` : ''}</span>}<span>First {formatDate(thread.firstOccurredAt)}</span>{thread.occurrences > 1 && <span>{thread.occurrences} observations</span>}</span></span>
+    <span className="notification-main"><button type="button" className="notification-main-button" onClick={onSelect}><span className="notification-title-line"><b>{thread.title}</b><SeverityBadge severity={thread.event.severity} />{thread.escalated && <span className="badge status-escalated">Escalated</span>}</span><span className="notification-description">{thread.description}</span></button><span className="notification-meta"><span className="product-chip">{thread.event.sourceApplication}</span><span className={`source-state-label source-${thread.event.sourceState}`}>Source {thread.event.sourceState}</span>{hasLiftIQLink && thread.event.stationId ? <a className="notification-asset-link" href={thread.event.sourceReference}>{thread.event.stationId}{thread.event.equipmentId ? ` · ${thread.event.equipmentId}` : ''}</a> : <span>{thread.event.assetId}{thread.event.equipmentId ? ` · ${thread.event.equipmentId}` : ''}</span>}<span>First {formatDate(thread.firstOccurredAt)}</span>{thread.occurrences > 1 && <span>{thread.occurrences} observations</span>}</span></span>
     <button type="button" className="notification-end" onClick={onSelect} aria-label={`Open ${thread.title}`}><StatusBadge status={thread.status} /><span>Last {formatDate(thread.lastObservedAt)}</span><ChevronRight size={17} /></button>
     {thread.unread && <span className="unread-dot" aria-label="Unread" />}
   </div>
@@ -297,10 +296,10 @@ function NotificationRow({ thread, selected, onSelect }: { thread: NotificationT
 
 function NotificationDetails({ thread, onClose, onAcknowledge, onRead, onSnooze, toast, role }: { thread: NotificationThread; onClose: () => void; onAcknowledge: () => void; onRead: () => void; onSnooze: () => void; toast: (msg: string) => void; role: UserRole }) {
   return <Drawer title="Notification details" subtitle={`Thread ${thread.id.toUpperCase()} · ${thread.event.sourceApplication}`} onClose={onClose} wide>
-    <div className="detail-title"><div><SeverityBadge severity={thread.event.severity} /><StatusBadge status={thread.status} /></div><h3>{thread.title}</h3><p>{thread.description}</p></div>
+    <div className="detail-title"><div><SeverityBadge severity={thread.event.severity} /></div><h3>{thread.title}</h3><p>{thread.description}</p><div className="detail-state-summary"><span><small>Notification</small><StatusBadge status={thread.status} /></span><span><small>Source alarm</small><b className={`source-state-label source-${thread.event.sourceState}`}>{thread.event.sourceState}</b></span></div></div>
     <div className="detail-actions"><button className="button button-primary" disabled={role === 'Read-only Monitor' || thread.status === 'Acknowledged' || thread.status === 'Resolved'} onClick={onAcknowledge}><CheckCheck size={15} /> Acknowledge</button><button className="button" onClick={onSnooze} disabled={role === 'Read-only Monitor' || thread.status === 'Resolved'}><Clock3 size={15} /> Snooze 1 hour</button><button className="button button-quiet" onClick={onRead}>{thread.unread ? 'Mark read' : 'Mark unread'}</button></div>
     <div className="info-grid"><Info label="Organization" value={organizations.find(o => o.id === thread.event.tenantId)?.name ?? 'Organization'} /><Info label="Asset / station" value={thread.event.assetId} /><Info label="Equipment" value={thread.event.equipmentId ?? '—'} /><Info label="Source event" value={thread.event.eventType} /><Info label="First detected" value={formatDate(thread.firstOccurredAt)} /><Info label="Last observed" value={formatDate(thread.lastObservedAt)} /><Info label="Occurrences" value={`${thread.occurrences} grouped observations`} /><Info label="Reminder" value={thread.lastReminderAt ? formatDate(thread.lastReminderAt) : 'No reminder recorded'} /></div>
-    <div className="source-callout"><div><b>Source lifecycle</b><span>{thread.event.sourceLifecycleId} · {thread.event.state}</span>{thread.event.stationId && <span>Station {thread.event.stationId}</span>}</div>{thread.event.sourceApplication === 'LiftIQ' && /^https?:\/\//.test(thread.event.sourceReference) ? <a className="button button-small" href={thread.event.sourceReference}>Open in LiftIQ</a> : <button className="button button-small" onClick={() => toast(`Source link placeholder: ${thread.event.sourceReference}`)}>Open in {thread.event.sourceApplication}</button>}</div>
+    <div className="source-callout"><div><b>Source lifecycle</b><span>{thread.event.sourceLifecycleId} · {thread.event.sourceState}</span>{thread.event.stationId && <span>Station {thread.event.stationId}</span>}</div>{thread.event.sourceApplication === 'LiftIQ' && /^https?:\/\//.test(thread.event.sourceReference) ? <a className="button button-small" href={thread.event.sourceReference}>Open in LiftIQ</a> : <button className="button button-small" onClick={() => toast(`Source link placeholder: ${thread.event.sourceReference}`)}>Open in {thread.event.sourceApplication}</button>}</div>
     <section className="detail-section"><SectionHeading title="Lifecycle timeline" detail="Meaningful changes and grouped evidence" />{thread.timeline.map(item => <div className="timeline-row" key={item.id}><span className={`timeline-dot ${item.kind}`} /><span className="timeline-time">{formatDate(item.time)}</span><span className="timeline-copy"><b>{item.title}</b><small>{item.description}</small></span></div>)}</section>
     <section className="detail-section"><SectionHeading title="Delivery attempts" detail="Simulated channel/provider outcomes · receipt is not verified" />{thread.deliveries.map(item => <div className="delivery-attempt" key={item.id}><span className="channel-icon"><ChannelIcon channel={item.channel} /></span><div><b>{item.channel} · {item.recipient}</b><small>{formatDate(item.time)} · Attempt {item.attempt}</small><small>{item.response}</small></div><span className={`delivery-state ${item.status === 'Failed' ? 'failed' : item.status === 'Retrying' ? 'retry' : 'accepted'}`}>{item.status}</span></div>)}</section>
     <div className="ack-note"><ShieldCheck size={15} /> Acknowledging this notification does not clear or change the source application's alarm or equipment state.</div>

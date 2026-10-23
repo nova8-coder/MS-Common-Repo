@@ -14,64 +14,107 @@ const titleFor = (event: LiftIQEvent): string => {
   }
 }
 
-/** Convert contract events to inbox threads; repeated delivery of an event ID is ignored. */
+const validTime = (value: string) => Number.isFinite(Date.parse(value))
+
+/** Validate and group contract events by source lifecycle, retaining each distinct observation. */
 export function mapLiftIQEventsToThreads(events: LiftIQEvent[]): NotificationThread[] {
   const unique = new Map<string, LiftIQEvent>()
   for (const event of events) {
-    if (!unique.has(event.eventId)) unique.set(event.eventId, event)
+    if (!event || typeof event !== 'object' || typeof event.eventId !== 'string' || !event.eventId || typeof event.incidentId !== 'string' || !event.incidentId || typeof event.tenantId !== 'string' || !event.tenantId || typeof event.stationId !== 'string' || !event.stationId || typeof event.eventType !== 'string' || !event.eventType || typeof event.summary !== 'string' || !event.summary.trim() || typeof event.occurredAt !== 'string' || !validTime(event.occurredAt) || !['critical', 'high', 'medium', 'low'].includes(event.severity) || !['active', 'acknowledged'].includes(event.sourceState)) continue
+    const key = `${event.tenantId}\u001f${event.eventId}`
+    const prior = unique.get(key)
+    if (!prior) unique.set(key, event)
+    else unique.set(key, {
+      ...event,
+      observations: [
+        ...(Array.isArray(prior.observations) ? prior.observations : []),
+        ...(Array.isArray(event.observations) ? event.observations : []),
+      ],
+    })
   }
 
-  return [...unique.values()].map((event): NotificationThread => ({
-    id: `liftiq-${event.incidentId.toLowerCase()}`,
-    event: {
-      eventId: event.eventId,
-      sourceApplication: 'LiftIQ',
-      tenantId: event.tenantId,
-      stationId: event.stationId,
-      assetId: event.assetId ?? event.stationId,
-      eventType: event.eventType,
-      sourceLifecycleId: event.incidentId,
-      severity: severityLabel[event.severity],
-      occurredAt: event.occurredAt,
-      correlationKey: `${event.tenantId}:${event.stationId}:${event.incidentId}`,
-      state: 'active',
-      sourceReference: event.detailsUrl ?? '',
-      metadata: { summary: event.summary },
-    },
-    title: titleFor(event),
-    description: event.summary,
-    status: 'Active',
-    firstOccurredAt: event.occurredAt,
-    lastObservedAt: event.occurredAt,
-    occurrences: 1,
-    unread: true,
-    escalated: false,
-    recipients: [],
-    timeline: [{
-      id: `${event.eventId}:created`, time: event.occurredAt, kind: 'detected',
-      title: 'LiftIQ lifecycle fixture received',
-      description: 'Mock contract event. No repeated observations or delivery attempts are inferred.',
-    }],
-    deliveries: [],
-  }))
+  const byLifecycle = new Map<string, LiftIQEvent[]>()
+  for (const event of unique.values()) {
+    const key = `${event.tenantId}\u001f${event.incidentId}`
+    byLifecycle.set(key, [...(byLifecycle.get(key) ?? []), event])
+  }
+
+  return [...byLifecycle.values()].map((lifecycleEvents): NotificationThread => {
+    const orderedEvents = lifecycleEvents.slice().sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt))
+    const first = orderedEvents[0]
+    const latest = orderedEvents[orderedEvents.length - 1]
+    const observations = new Map<string, { eventId: string; occurredAt: string; summary: string }>()
+    for (const event of orderedEvents) {
+      const supplied = Array.isArray(event.observations) && event.observations.length ? event.observations : [{ eventId: event.eventId, occurredAt: event.occurredAt, summary: event.summary }]
+      for (const observation of supplied) {
+        if (!observation || typeof observation !== 'object' || typeof observation.eventId !== 'string' || !observation.eventId || typeof observation.occurredAt !== 'string' || !validTime(observation.occurredAt) || typeof observation.summary !== 'string' || !observation.summary.trim()) continue
+        if (!observations.has(observation.eventId)) observations.set(observation.eventId, observation)
+      }
+    }
+    if (!observations.size) observations.set(latest.eventId, { eventId: latest.eventId, occurredAt: latest.occurredAt, summary: latest.summary })
+    const orderedObservations = [...observations.values()].sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt))
+    const timeline: NotificationThread['timeline'] = orderedObservations.map((observation, index) => ({
+      id: `${observation.eventId}:observed`,
+      time: observation.occurredAt,
+      kind: index === 0 ? 'detected' : 'repeat',
+      title: index === 0 ? 'Source alarm activated' : 'Repeated source observation grouped',
+      description: index === 0 ? observation.summary : `${observation.summary} Source alarm history is retained; this observation does not create a separate notification thread.`,
+    }))
+    const sourceEvent = {
+      eventId: first.eventId,
+      sourceApplication: 'LiftIQ' as const,
+      tenantId: latest.tenantId,
+      stationId: latest.stationId,
+      assetId: latest.assetId ?? latest.stationId,
+      eventType: latest.eventType,
+      sourceLifecycleId: latest.incidentId,
+      severity: severityLabel[latest.severity],
+      occurredAt: first.occurredAt,
+      correlationKey: `${latest.tenantId}:${latest.stationId}:${latest.incidentId}`,
+      sourceState: latest.sourceState,
+      sourceReference: latest.detailsUrl ?? '',
+      metadata: { summary: latest.summary },
+    }
+    return {
+      id: `liftiq-${latest.tenantId}-${latest.incidentId.toLowerCase()}`,
+      event: sourceEvent,
+      title: titleFor(latest),
+      description: latest.summary,
+      status: 'Active',
+      firstOccurredAt: orderedObservations[0]?.occurredAt ?? first.occurredAt,
+      lastObservedAt: orderedObservations[orderedObservations.length - 1]?.occurredAt ?? latest.occurredAt,
+      occurrences: Math.max(1, orderedObservations.length),
+      unread: true,
+      escalated: false,
+      recipients: [],
+      timeline,
+      deliveries: [],
+    }
+  })
 }
 
 /** Merge deterministic integration fixtures without duplicating existing stable event IDs. */
 export function mergeLiftIQThreads(existing: NotificationThread[], events: LiftIQEvent[]) {
   const incoming = mapLiftIQEventsToThreads(events)
   const byEventId = new Map<string, NotificationThread>()
-  for (const thread of incoming) byEventId.set(thread.event.eventId, thread)
+  const byLifecycle = new Map<string, NotificationThread>()
+  for (const thread of incoming) {
+    byEventId.set(`${thread.event.tenantId}\u001f${thread.event.eventId}`, thread)
+    byLifecycle.set(`${thread.event.tenantId}\u001f${thread.event.sourceLifecycleId}`, thread)
+  }
   const used = new Set<string>()
   const merged = existing.map(thread => {
-    const mapped = byEventId.get(thread.event.eventId)
-    if (!mapped || used.has(thread.event.eventId)) return thread
-    used.add(thread.event.eventId)
+    const key = `${thread.event.tenantId}\u001f${thread.event.sourceLifecycleId}`
+    const mapped = byEventId.get(`${thread.event.tenantId}\u001f${thread.event.eventId}`) ?? byLifecycle.get(key)
+    if (!mapped || used.has(key)) return thread
+    used.add(key)
     // Keep the existing inbox row ID and read state while using the adapter's source data.
     return { ...mapped, id: thread.id, unread: thread.unread }
   })
   for (const thread of incoming) {
-    if (!used.has(thread.event.eventId)) {
-      used.add(thread.event.eventId)
+    const key = `${thread.event.tenantId}\u001f${thread.event.sourceLifecycleId}`
+    if (!used.has(key)) {
+      used.add(key)
       merged.push(thread)
     }
   }

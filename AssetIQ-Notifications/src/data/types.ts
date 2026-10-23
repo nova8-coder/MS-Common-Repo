@@ -18,7 +18,7 @@ export interface NormalizedEvent {
   occurredAt: string
   receivedAt?: string
   correlationKey: string
-  state: 'active' | 'acknowledged' | 'recovered'
+  sourceState: 'active' | 'acknowledged' | 'recovered'
   sourceReference: string
   metadata: { summary: string; value?: string; threshold?: string }
 }

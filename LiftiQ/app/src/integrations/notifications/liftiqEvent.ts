@@ -14,8 +14,10 @@ export type LiftIQEvent = {
   stationId: string
   assetId?: string
   occurredAt: string
+  sourceState: 'active' | 'acknowledged'
   severity: 'critical' | 'high' | 'medium' | 'low'
   summary: string
+  observations: Array<{ eventId: string; occurredAt: string; summary: string }>
   detailsUrl?: string
 }
 
@@ -62,8 +64,12 @@ export function mapAlarmToLiftIQEvent(
     tenantId,
     stationId: alarm.station,
     occurredAt: activation.at,
+    sourceState: alarm.status === 'Acknowledged' ? 'acknowledged' : 'active',
     severity: alarm.severity.toLowerCase() as LiftIQEvent['severity'],
     summary: activation.detail,
+    observations: alarm.events
+      .filter((item) => item.kind === 'device' && Boolean(item.at))
+      .map((item) => ({ eventId: item.id, occurredAt: item.at, summary: item.detail })),
     detailsUrl: buildLiftIQStationUrl(alarm.station, 'Alarms'),
   }
 }
@@ -72,7 +78,20 @@ export function mapAlarmsToLiftIQEvents(alarms: AlarmLifecycle[], tenantId = DEM
   const byEventId = new Map<string, LiftIQEvent>()
   for (const alarm of alarms) {
     const event = mapAlarmToLiftIQEvent(alarm, tenantId)
-    if (event && !byEventId.has(event.eventId)) byEventId.set(event.eventId, event)
+    if (!event) continue
+    const prior = byEventId.get(event.eventId)
+    if (!prior) {
+      byEventId.set(event.eventId, event)
+      continue
+    }
+    const observations = new Map<string, LiftIQEvent['observations'][number]>()
+    for (const observation of [...prior.observations, ...event.observations]) {
+      if (!observations.has(observation.eventId)) observations.set(observation.eventId, observation)
+    }
+    byEventId.set(event.eventId, {
+      ...event,
+      observations: [...observations.values()].sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt)),
+    })
   }
   return [...byEventId.values()]
 }

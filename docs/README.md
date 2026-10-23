@@ -7,6 +7,7 @@ This index points to the current application entry points and groups the reposit
 LiftIQ product behavior and local prototype limits:
 
 - [LiftIQ application README](../LiftiQ/README.md) — current product prototype entry point and behavior overview.
+- [LiftIQ current state and UX notes](liftiq/CURRENT_STATE.md) — page scope, alarm lifecycle ownership, and UX clarifications.
 - Standalone [LiftIQ UI prototypes](<../LiftiQ/HTML files for example/>) remain in their original folder. They are HTML UI prototypes, not authoritative current behavior documentation; their adoption status is unknown.
 
 The `docs/liftiq/` folder is reserved for LiftIQ-specific documentation. No standalone document was moved there because the application README remains at its existing root and the other LiftIQ artifacts are prototypes.
@@ -16,6 +17,7 @@ The `docs/liftiq/` folder is reserved for LiftIQ-specific documentation. No stan
 Notifications application pages, local mock behavior, and prototype limits:
 
 - [AssetIQ Notifications README](../AssetIQ-Notifications/README.md) — application entry point and prototype behavior overview.
+- [Notifications current state and UX notes](notifications/CURRENT_STATE.md) — routes, rule semantics, alert-intelligence status, and prototype limits.
 - [LiftIQ integration contract](integration/INTEGRATION.md) — proposed frontend contract and integration limits; not a production API.
 
 The `docs/notifications/` folder is reserved for Notifications-specific documentation. The application README remains at its existing root; no separate Notifications design or processing specification was present in this checkout.

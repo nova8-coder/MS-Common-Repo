@@ -15,7 +15,6 @@ export function simulateAcknowledge(thread: NotificationThread, actor: string): 
     ...thread,
     status: 'Acknowledged',
     acknowledgedBy: actor,
-    event: { ...thread.event, state: 'acknowledged' },
     timeline: [...thread.timeline, { id: `ack-${Date.now()}`, time, kind: 'acknowledged', title: `Acknowledged by ${actor}`, description: 'This acknowledges the notification thread only. The source alarm and equipment state are unchanged.' }],
   }
 }

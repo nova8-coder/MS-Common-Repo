@@ -27,7 +27,7 @@ export function NotificationsPage({
   onRead,
   onOpenAlarm,
   onToast,
-  alarms: _alarms,
+  alarms,
   muteRules,
   onAddMute,
   onRemoveMute,
@@ -69,6 +69,14 @@ export function NotificationsPage({
   const [activeEvents, setActiveEvents] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(subscriptionCategories.map(c => [c.id, [...c.events]])),
   )
+  const alarmById = useMemo(() => new Map(alarms.map(alarm => [alarm.id, alarm])), [alarms])
+  const linkedAlarmFor = (item: NotificationItem) => item.lifecycleId ? alarmById.get(item.lifecycleId) : undefined
+  const sourceLifecycleLabel = (item: NotificationItem) => {
+    const sourceAlarm = linkedAlarmFor(item)
+    if (!sourceAlarm) return 'Not linked'
+    if (sourceAlarm.status === 'Completed' && sourceAlarm.resolution === 'Device') return 'Cleared'
+    return sourceAlarm.status
+  }
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -101,17 +109,17 @@ export function NotificationsPage({
       lifecycleId: muteTarget.lifecycleId || muteTarget.id,
       station: muteTarget.asset.split(' · ')[0] || 'NOVA_02',
       event: muteTarget.title,
-      scope: 'Repeated reminders only · this lifecycle',
+      scope: 'Prototype preference only · this lifecycle',
       mutedBy: 'Venky Karuppanan',
       createdAt: new Date().toISOString(),
       expiresAt: hours ? new Date(Date.now() + hours * 3600000).toISOString() : undefined,
-      reason: muteReason.trim() || 'Operator silenced reminders during active troubleshooting',
+      reason: muteReason.trim() || 'Operator recorded a local mute preference',
     }
     onAddMute(newRule)
     setMuteTarget(null)
     setMuteReason('')
     setCriticalConfirmed(false)
-    onToast('Mute rule added. Alarm lifecycle remains active and visible in alarms.')
+    onToast('Local mute rule recorded. No delivery engine is connected; the alarm remains active and visible in Alarms.')
   }
 
   const togglePref = (catId: string, channel: 'email' | 'push' | 'sms' | 'recovery') => {
@@ -146,6 +154,8 @@ export function NotificationsPage({
           <p className="text-muted text-xs mt-1">Review operational updates and manage how you receive alerts.</p>
         </div>
       </div>
+
+      <div className="ack-note mb-3">Local prototype records only. Delivery attempts are simulated; read and mute actions do not acknowledge, clear, or hide the source alarm. Use Alarms for the authoritative lifecycle.</div>
 
       {/* Top 4 Summary Cards */}
       <div className="notifications-summary-grid">
@@ -322,8 +332,9 @@ export function NotificationsPage({
                   <th style={{ width: '45px' }} />
                   <th>Notification</th>
                   <th>Entity / Station</th>
+                  <th>Source alarm</th>
                   <th>Time</th>
-                  <th>Delivery</th>
+                  <th>Delivery (simulated)</th>
                   <th className="text-center">Actions</th>
                 </tr>
               </thead>
@@ -354,6 +365,7 @@ export function NotificationsPage({
                       <td>
                         <strong className="text-slate-900">{item.asset}</strong>
                       </td>
+                      <td>{item.lifecycleId ? <><strong>{sourceLifecycleLabel(item)}</strong><small className="text-muted block">Lifecycle {item.lifecycleId}</small></> : <span className="text-muted text-xs">No linked alarm lifecycle</span>}</td>
                       <td>
                         <span className="text-muted text-xs">{item.at.replace('T', ' ').slice(0, 16)}</span>
                       </td>
@@ -393,6 +405,7 @@ export function NotificationsPage({
                     </tr>
                   )
                 })}
+                {filteredItems.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-muted">No notifications match these filters. Clear a filter or check the selected time and read state.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -404,7 +417,7 @@ export function NotificationsPage({
         <div className="alarm-table-card p-4">
           <h2 className="panel-title mb-2">Muted Notification Rules</h2>
           <p className="text-muted text-xs mb-4">
-            Mute rules pause delivery of repeated alarm notifications for one lifecycle. They never resolve or hide an alarm.
+            Prototype mute-rule records are stored locally. No delivery engine applies them; source alarms remain visible and unchanged.
           </p>
           <table className="home-table">
             <thead>
@@ -449,16 +462,16 @@ export function NotificationsPage({
       {/* Tab: Mute Suggestions */}
       {activeTab === 'suggestions' && (
         <div className="alarm-table-card p-5">
-          <h2 className="panel-title mb-2">✦ Mute Suggestions</h2>
+          <h2 className="panel-title mb-2">✦ Example Mute Suggestion</h2>
           <p className="text-muted text-xs mb-4">
-            When an alarm repeats frequently while operations are already actively investigating, LiftIQ suggests muting repeated channel notifications to reduce noise.
+            This is a fixed suggestion based on mock alarm data, not an automated analysis of incoming events.
           </p>
 
           <div className="space-y-3">
             <div className="suggested-item border border-slate-200 p-4 rounded-lg">
               <div className="suggested-icon-wrap bg-soft-red text-red">!</div>
               <div className="suggested-body">
-                <strong>High Water Level · NOVA_02</strong>
+                <strong>Example · High Water Level · NOVA_02</strong>
                 <p className="text-slate-600 text-xs mt-1">
                   Alarm LC-1042 has repeated 2 times in the last 2 hours. A status report has already arrived and is pending recovery review.
                 </p>
@@ -470,7 +483,7 @@ export function NotificationsPage({
                   setMuteTarget(target)
                 }}
               >
-                Mute Reminders
+                Save Mute Rule
               </button>
             </div>
           </div>
@@ -646,6 +659,7 @@ export function NotificationsPage({
                 <div className="kv-item"><span>Asset</span><strong>{selectedNotice.asset}</strong></div>
                 <div className="kv-item"><span>Timestamp</span><strong>{selectedNotice.at.replace('T', ' ')}</strong></div>
                 <div className="kv-item"><span>Read Status</span><strong>{selectedNotice.unread ? 'Unread' : 'Read'}</strong></div>
+                <div className="kv-item"><span>Source Alarm Lifecycle</span><strong>{sourceLifecycleLabel(selectedNotice)}</strong></div>
               </dl>
 
               {selectedNotice.delivery && selectedNotice.delivery.length > 0 && (
@@ -685,14 +699,14 @@ export function NotificationsPage({
         <div className="modal-backdrop" onClick={() => setMuteTarget(null)}>
           <div className="modal-window max-w-lg" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Mute Notification Reminders?</h2>
+              <h2>Create Prototype Mute Rule?</h2>
               <button className="btn-close" onClick={() => setMuteTarget(null)}>✕</button>
             </div>
             <div className="modal-body text-sm space-y-3">
               <div className="p-3 bg-amber-50 border border-amber-200 rounded text-amber-900 text-xs">
-                <strong>High-Severity Alarm Notice</strong>
+                <strong>Local rule record only</strong>
                 <p className="mt-1">
-                  Muting pauses repeated push and email notifications for this lifecycle only. The alarm lifecycle itself remains active, visible, and unmodified in Alarm Management.
+                  This prototype has no delivery engine, so saving this rule does not pause or suppress delivery. It never resolves or hides the source alarm, which remains visible in Alarms.
                 </p>
                 <label className="flex items-start gap-2 mt-2 font-semibold">
                   <input
@@ -700,12 +714,12 @@ export function NotificationsPage({
                     checked={criticalConfirmed}
                     onChange={e => setCriticalConfirmed(e.target.checked)}
                   />
-                  I understand this does not resolve or clear the alarm.
+                  I understand this only records a local preference and does not resolve or clear the alarm.
                 </label>
               </div>
 
               <div>
-                <label className="field-group-label mb-1">Mute Duration</label>
+                <label className="field-group-label mb-1">Rule Expiry</label>
                 <select
                   value={muteDuration}
                   onChange={e => setMuteDuration(e.target.value)}
@@ -736,7 +750,7 @@ export function NotificationsPage({
                 disabled={!criticalConfirmed}
                 onClick={handleMuteConfirm}
               >
-                Confirm Mute
+                Save Mute Rule
               </button>
             </div>
           </div>

@@ -113,6 +113,12 @@ export function StationPage({
   }
 
   const activeAlarmsCount = alarms.filter(a => a.status === 'Active').length
+  const unresolvedAlarmsCount = alarms.filter(a => ['Active', 'Acknowledged', 'Recovery review', 'Stale'].includes(a.status)).length
+  const pumpFaultCount = pumps.filter(pump => pump.state === 'Fault').length
+  const conditionSummary = [
+    unresolvedAlarmsCount ? `${unresolvedAlarmsCount} unresolved alarm${unresolvedAlarmsCount === 1 ? '' : 's'}` : '',
+    pumpFaultCount ? `${pumpFaultCount} pump fault${pumpFaultCount === 1 ? '' : 's'}` : '',
+  ].filter(Boolean).join(' · ')
   const selectedMaintenanceEvents = pumpMaintenanceData[selectedPump] || pumpMaintenanceData[0]
   const nextMaintenance = selectedMaintenanceEvents.find(event => event.status === 'Upcoming')
   const hasOverdueMaintenance = selectedMaintenanceEvents.some(event => event.status === 'Upcoming' && daysUntilMaintenance(event.scheduled) < 0)
@@ -127,20 +133,19 @@ export function StationPage({
           </button>
           <div className="station-title-indicator-row">
             <h1 className="station-main-title">{station.id}</h1>
-            <span className="wireless-signal-icon" title="Wireless connection healthy">((•))</span>
-            <span className="station-online-badge">Online</span>
+            <span className="station-online-badge">Reporting label: {station.reporting}</span>
           </div>
           <div className="station-last-reported-line">
-            Lift Station • Last Reported at 10/13/2026 04:08 PM
+            Sample record · Last reported {formatDate(station.lastReported)}
           </div>
         </div>
 
         {/* Right Station KPIs */}
         <div className="station-banner-stats">
           <div className="station-stat-item">
-            <small>Station Health</small>
-            <strong className="text-green flex-center-gap">
-              <span className="text-xs">✓</span> Good
+            <small>Open Conditions</small>
+            <strong className={`${conditionSummary ? 'text-amber' : 'text-green'} flex-center-gap`}>
+              <span className="text-xs">{conditionSummary ? '!' : '✓'}</span> {conditionSummary || 'No open alarm or pump fault'}
             </strong>
           </div>
 
@@ -170,8 +175,8 @@ export function StationPage({
 
           {/* Pump indicators */}
           <div className="station-stat-item hidden-mobile">
-            <small>Alternating Pumps</small>
-            <span className="text-xs font-semibold text-slate-700">P1 (Lead) P2 (Lag) P3 (Lag-Lag)</span>
+            <small>Pump State · Role</small>
+            <span className="text-xs font-semibold text-slate-700">{pumps.map(pump => `${pump.name.replace('Pump ', 'P')} ${pump.state} (${pump.role})`).join(' · ')}</span>
           </div>
         </div>
       </div>
