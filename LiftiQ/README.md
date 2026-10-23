@@ -56,6 +56,6 @@ No backend, schema, message-processing pipeline, or new protocol behavior was ad
 
 ## AssetIQ Notification app prototype integration
 
-LiftIQ remains a separate app from `../AssetIQ-Notifications`. The top-bar bell opens the notification inbox and previews only supported active mock alarm lifecycles. The local integration contract and mapper are in `app/src/integrations/notifications/liftiqEvent.ts`; the inbox app has a matching structural contract and a deterministic `LC-1042` fixture. There is no shared runtime state or live event/API integration. See [the notification app integration notes](../AssetIQ-Notifications/INTEGRATION.md) for exact commands, ports, event support, and data gaps.
+LiftIQ remains a separate app from `../AssetIQ-Notifications`. The top-bar bell opens the notification inbox and previews only supported active mock alarm lifecycles. The local integration contract and mapper are in `app/src/integrations/notifications/liftiqEvent.ts`; the inbox app has a matching structural contract and a deterministic `LC-1042` fixture. There is no shared runtime state or live event/API integration. See [the notification app integration notes](../docs/integration/INTEGRATION.md) for exact commands, ports, event support, and data gaps.
 
 Run the personalization ranking tests with `npm test` from `app/`.

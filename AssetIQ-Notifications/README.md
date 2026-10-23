@@ -24,6 +24,6 @@ All records and actions are local mock data. The role selector and organization 
 
 ## LiftIQ prototype integration
 
-See [the integration contract and limits](INTEGRATION.md). The inbox is seeded with a deterministic contract fixture for LiftIQ lifecycle `LC-1042`; it is not receiving live events. Its event ID is stable, duplicate IDs are collapsed, and no delivery attempts or recovery are inferred. The event's `org-city-water` tenant value is a synthetic demo scope because LiftIQ currently has no tenant identity field.
+See [the integration contract and limits](../docs/integration/INTEGRATION.md). The inbox is seeded with a deterministic contract fixture for LiftIQ lifecycle `LC-1042`; it is not receiving live events. Its event ID is stable, duplicate IDs are collapsed, and no delivery attempts or recovery are inferred. The event's `org-city-water` tenant value is a synthetic demo scope because LiftIQ currently has no tenant identity field.
 
 LiftIQ station links use `http://localhost:5173/?station=NOVA_02&tab=Alarms`. Set `VITE_LIFTIQ_APP_URL` in this app's environment to use another LiftIQ base URL.

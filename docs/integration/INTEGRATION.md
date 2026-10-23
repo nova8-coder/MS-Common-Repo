@@ -1,6 +1,6 @@
 # LiftIQ integration contract
 
-This is a proposed frontend contract, not an existing LiftIQ API. Its source type is in `LiftiQ/app/src/integrations/notifications/liftiqEvent.ts`; the notification app keeps a structurally matching local type in `src/integrations/liftiq/contract.ts` so the two Vite apps remain independent without a shared runtime package.
+This is a proposed frontend contract, not an existing LiftIQ API. Its source type is in [`liftiqEvent.ts`](../../LiftiQ/app/src/integrations/notifications/liftiqEvent.ts); the notification app keeps a structurally matching local type in [`contract.ts`](../../AssetIQ-Notifications/src/integrations/liftiq/contract.ts) so the two Vite apps remain independent without a shared runtime package.
 
 Each event has a stable `eventId`, a lifecycle `incidentId`, versioned `eventType`, tenant and station context, an optional stable asset ID, ISO 8601 local occurrence timestamp, severity, summary, and optional source URL. LiftIQ's mock timestamps have no UTC offset, so the adapter preserves their local date-time text instead of inventing a timezone. LiftIQ's domain model has no tenant field; the fixture's `org-city-water` is synthetic and must be replaced by authenticated server-side tenant resolution before production use.
 
