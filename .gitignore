@@ -1,0 +1,5 @@
+# AssetIQ Notifications dependencies and generated build artifacts
+/AssetIQ-Notifications/node_modules/
+/AssetIQ-Notifications/dist/
+/AssetIQ-Notifications/.vite/
+/AssetIQ-Notifications/*.tsbuildinfo

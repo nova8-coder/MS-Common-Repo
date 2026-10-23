@@ -1,0 +1,4 @@
+.notification-main-button { display: grid; width: 100%; gap: 5px; padding: 0; border: 0; background: transparent; text-align: left; }
+.notification-end { border: 0; padding: 0; background: transparent; text-align: right; }
+.notification-asset-link { color: #1769a9; text-decoration: underline; text-underline-offset: 2px; }
+.notification-asset-link:hover { color: #0b4f87; }
