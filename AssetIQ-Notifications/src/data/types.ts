@@ -4,6 +4,7 @@ export type ThreadStatus = 'Active' | 'Acknowledged' | 'Resolved' | 'Snoozed'
 export type Channel = 'In-app' | 'Push' | 'Email' | 'SMS'
 export type DeliveryStatus = 'Queued' | 'Attempted' | 'Provider accepted' | 'Failed' | 'Retrying'
 export type UserRole = 'Platform Administrator' | 'Tenant Administrator' | 'Operations User' | 'Read-only Monitor'
+export type RepeatHandling = 'group' | 'remind' | 'every'
 
 export interface NormalizedEvent {
   eventId: string
@@ -21,6 +22,35 @@ export interface NormalizedEvent {
   sourceState: 'active' | 'acknowledged' | 'recovered'
   sourceReference: string
   metadata: { summary: string; value?: string; threshold?: string }
+}
+
+export type IntakeDisposition = 'Accepted' | 'Grouped' | 'Duplicate' | 'Rejected'
+export interface EventObservation {
+  id: string
+  sourceObservationId: string
+  eventId: string
+  incidentId: string
+  tenantId: string
+  sourceApplication: Product
+  stationId: string
+  eventType: string
+  sourceState: 'active' | 'acknowledged' | 'recovered'
+  sourceStateExplicit?: boolean
+  occurredAt: string
+  summary: string
+  disposition: IntakeDisposition
+  reason: string
+}
+
+export type IntelligenceFinding = 'Potentially flapping' | 'Persistent active alarm'
+export interface LifecycleAssessment {
+  tenantId: string
+  incidentId: string
+  findings: IntelligenceFinding[]
+  evidence: string[]
+  uniqueObservations: number
+  duplicateObservations: number
+  currentSourceState: 'active' | 'acknowledged' | 'recovered'
 }
 
 export interface TimelineEntry {
@@ -77,6 +107,7 @@ export interface NotificationRule {
   maxReminders: number
   escalationMinutes: number
   recoveryNotification: boolean
+  repeatHandling?: RepeatHandling
   enabled: boolean
   updatedAt: string
 }

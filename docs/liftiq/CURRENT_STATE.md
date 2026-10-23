@@ -20,6 +20,10 @@ The Notifications table and detail drawer now show the linked source alarm lifec
 
 The fixed mute suggestion is labeled as an example based on mock data, not an automated detector. No equipment signals, alarm states, or lifecycle rules were added or changed for this UI clarification.
 
+## Notifications navigation and event context
+
+The existing top-bar notification bell now links each supported active alarm preview to the matching Notifications inbox context using the proposed tenant and lifecycle identifiers. The separate “view all” link still opens the general inbox. This is a URL deep link between independent apps; it does not share state, session, SSO, or authorization. LiftIQ still owns all alarm interpretation and lifecycle updates.
+
 ## Integration boundary
 
-The frontend mapper exports only supported active or LiftIQ-acknowledged lifecycles. It carries `sourceState` and source device observation IDs, timestamps, and summaries. The event contract, fixture tenant, and URL links are prototype integration data, not a production API. See the [LiftIQ–Notifications integration reference](../integration/INTEGRATION.md).
+The frontend mapper exports only supported active or LiftIQ-acknowledged lifecycles. It carries `sourceState` and source device observation IDs, timestamps, summaries, and explicit active-state evidence for recognized activation/repeat records. It does not infer recovery transitions from telemetry or export completed lifecycles. The event contract, fixture tenant, and URL links are prototype integration data, not a production API. See the [LiftIQ–Notifications integration reference](../integration/INTEGRATION.md).

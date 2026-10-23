@@ -9,6 +9,15 @@ export function updateThread(threads: NotificationThread[], id: string, patch: P
   return threads.map(thread => thread.id === id ? { ...thread, ...patch } : thread)
 }
 
+export function resolveDeepLinkedThread(
+  threads: NotificationThread[],
+  context: { threadId?: string | null; tenantId?: string | null; lifecycleId?: string | null },
+) {
+  if (context.threadId) return threads.find(thread => thread.id === context.threadId)
+  if (!context.tenantId || !context.lifecycleId) return undefined
+  return threads.find(thread => thread.event.tenantId === context.tenantId && thread.event.sourceLifecycleId === context.lifecycleId)
+}
+
 export function simulateAcknowledge(thread: NotificationThread, actor: string): NotificationThread {
   const time = new Date().toISOString()
   return {

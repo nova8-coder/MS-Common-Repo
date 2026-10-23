@@ -1,5 +1,5 @@
 import type { LiftIQEvent } from '../integrations/notifications/liftiqEvent'
-import { getNotificationInboxUrl } from '../integrations/notifications/liftiqEvent'
+import { buildNotificationThreadUrl, getNotificationInboxUrl } from '../integrations/notifications/liftiqEvent'
 
 type Preview = { event: LiftIQEvent; unread: boolean }
 
@@ -25,7 +25,7 @@ export function NotificationBell({ previews }: { previews: Preview[] }) {
           <span>MOCK DATA</span>
         </div>
         {previews.length ? previews.slice(0, 3).map(({ event }) => (
-          <a className="integration-notification-preview" href={inboxUrl} key={event.eventId}>
+          <a className="integration-notification-preview" href={buildNotificationThreadUrl(event)} key={event.eventId}>
             <b>{event.summary}</b>
             <small>{event.stationId} · {event.eventType}</small>
           </a>

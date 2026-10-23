@@ -13,9 +13,9 @@ export type LiftIQEvent = {
   stationId: string
   assetId?: string
   occurredAt: string
-  sourceState: 'active' | 'acknowledged'
+  sourceState: 'active' | 'acknowledged' | 'recovered'
   severity: 'critical' | 'high' | 'medium' | 'low'
   summary: string
-  observations: Array<{ eventId: string; occurredAt: string; summary: string }>
+  observations: Array<{ eventId: string; occurredAt: string; summary: string; sourceState?: 'active' | 'acknowledged' | 'recovered' }>
   detailsUrl?: string
 }

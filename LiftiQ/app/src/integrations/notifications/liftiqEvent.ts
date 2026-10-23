@@ -14,10 +14,10 @@ export type LiftIQEvent = {
   stationId: string
   assetId?: string
   occurredAt: string
-  sourceState: 'active' | 'acknowledged'
+  sourceState: 'active' | 'acknowledged' | 'recovered'
   severity: 'critical' | 'high' | 'medium' | 'low'
   summary: string
-  observations: Array<{ eventId: string; occurredAt: string; summary: string }>
+  observations: Array<{ eventId: string; occurredAt: string; summary: string; sourceState?: 'active' | 'acknowledged' | 'recovered' }>
   detailsUrl?: string
 }
 
@@ -31,6 +31,14 @@ export const LIFTIQ_EVENT_TYPES = {
 
 export const getNotificationInboxUrl = () =>
   import.meta.env?.VITE_NOTIFICATION_APP_URL || 'http://localhost:5174/inbox'
+
+export function buildNotificationThreadUrl(event: Pick<LiftIQEvent, 'tenantId' | 'incidentId'>) {
+  const url = new URL(getNotificationInboxUrl())
+  url.searchParams.set('source', 'LiftIQ')
+  url.searchParams.set('tenantId', event.tenantId)
+  url.searchParams.set('lifecycleId', event.incidentId)
+  return url.toString()
+}
 
 export function buildLiftIQStationUrl(stationId: string, tab = 'Alarms') {
   const base = import.meta.env?.VITE_LIFTIQ_APP_URL || 'http://localhost:5173'
@@ -69,7 +77,14 @@ export function mapAlarmToLiftIQEvent(
     summary: activation.detail,
     observations: alarm.events
       .filter((item) => item.kind === 'device' && Boolean(item.at))
-      .map((item) => ({ eventId: item.id, occurredAt: item.at, summary: item.detail })),
+      .map((item) => ({
+        eventId: item.id,
+        occurredAt: item.at,
+        summary: item.detail,
+        ...(item.kind === 'device' && /^(Alarm Generated|Repeat Alarm|Repeat activation)/i.test(item.title)
+          ? { sourceState: 'active' as const }
+          : {}),
+      })),
     detailsUrl: buildLiftIQStationUrl(alarm.station, 'Alarms'),
   }
 }

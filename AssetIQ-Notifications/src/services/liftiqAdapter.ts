@@ -20,7 +20,7 @@ const validTime = (value: string) => Number.isFinite(Date.parse(value))
 export function mapLiftIQEventsToThreads(events: LiftIQEvent[]): NotificationThread[] {
   const unique = new Map<string, LiftIQEvent>()
   for (const event of events) {
-    if (!event || typeof event !== 'object' || typeof event.eventId !== 'string' || !event.eventId || typeof event.incidentId !== 'string' || !event.incidentId || typeof event.tenantId !== 'string' || !event.tenantId || typeof event.stationId !== 'string' || !event.stationId || typeof event.eventType !== 'string' || !event.eventType || typeof event.summary !== 'string' || !event.summary.trim() || typeof event.occurredAt !== 'string' || !validTime(event.occurredAt) || !['critical', 'high', 'medium', 'low'].includes(event.severity) || !['active', 'acknowledged'].includes(event.sourceState)) continue
+    if (!event || typeof event !== 'object' || typeof event.eventId !== 'string' || !event.eventId || typeof event.incidentId !== 'string' || !event.incidentId || typeof event.tenantId !== 'string' || !event.tenantId || typeof event.stationId !== 'string' || !event.stationId || typeof event.eventType !== 'string' || !event.eventType || typeof event.summary !== 'string' || !event.summary.trim() || typeof event.occurredAt !== 'string' || !validTime(event.occurredAt) || !['critical', 'high', 'medium', 'low'].includes(event.severity) || !['active', 'acknowledged', 'recovered'].includes(event.sourceState)) continue
     const key = `${event.tenantId}\u001f${event.eventId}`
     const prior = unique.get(key)
     if (!prior) unique.set(key, event)

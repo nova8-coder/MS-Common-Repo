@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "tsc --ignoreConfig src/services/liftiqAdapter.ts src/services/mockService.ts --target ES2022 --module ES2022 --moduleResolution bundler --rootDir src --outDir .test-dist --skipLibCheck && node --test tests/*.test.mjs && rm -rf .test-dist"
+    "test": "tsc --ignoreConfig src/services/liftiqAdapter.ts src/services/mockService.ts src/services/eventIntelligence.ts src/services/ruleBuilder.ts --target ES2022 --module ES2022 --moduleResolution bundler --rootDir src --outDir .test-dist --skipLibCheck && node --test tests/*.test.mjs && rm -rf .test-dist"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

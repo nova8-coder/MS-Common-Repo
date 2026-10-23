@@ -18,6 +18,8 @@ Notifications application pages, local mock behavior, and prototype limits:
 
 - [AssetIQ Notifications README](../AssetIQ-Notifications/README.md) — application entry point and prototype behavior overview.
 - [Notifications current state and UX notes](notifications/CURRENT_STATE.md) — routes, rule semantics, alert-intelligence status, and prototype limits.
+- [Administrator experience](notifications/ADMIN_EXPERIENCE.md) — dashboard landing page, simplified rule workflow, page responsibilities, and prototype boundaries.
+- [Event processing and UX decisions](notifications/EVENT_PROCESSING.md) — intake, grouping, intelligence criteria, implementation status, and infrastructure boundaries.
 - [LiftIQ integration contract](integration/INTEGRATION.md) — proposed frontend contract and integration limits; not a production API.
 
 The `docs/notifications/` folder is reserved for Notifications-specific documentation. The application README remains at its existing root; no separate Notifications design or processing specification was present in this checkout.

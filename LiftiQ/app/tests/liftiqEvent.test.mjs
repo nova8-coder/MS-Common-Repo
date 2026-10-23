@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildLiftIQStationUrl,
+  buildNotificationThreadUrl,
   LIFTIQ_EVENT_TYPES,
   mapAlarmToLiftIQEvent,
   mapAlarmsToLiftIQEvents,
@@ -64,4 +65,13 @@ test('builds a routable notification inbox URL', () => {
   assert.equal(url.origin, 'http://localhost:5173')
   assert.equal(url.searchParams.get('station'), 'NOVA_02')
   assert.equal(url.searchParams.get('tab'), 'Alarms')
+})
+
+test('builds a contextual notifications link with lifecycle and tenant identifiers', () => {
+  const url = new URL(buildNotificationThreadUrl({ tenantId: 'org-city-water', incidentId: 'LC-1042' }))
+  assert.equal(url.origin, 'http://localhost:5174')
+  assert.equal(url.pathname, '/inbox')
+  assert.equal(url.searchParams.get('source'), 'LiftIQ')
+  assert.equal(url.searchParams.get('tenantId'), 'org-city-water')
+  assert.equal(url.searchParams.get('lifecycleId'), 'LC-1042')
 })

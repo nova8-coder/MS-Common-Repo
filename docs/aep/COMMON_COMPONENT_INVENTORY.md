@@ -38,3 +38,7 @@
 ## Reuse recommendation
 
 Start with low-level, product-neutral primitives and contracts (tokens, page heading, table/filter primitives, empty/loading/error patterns, severity/status presentation with neutral input types). Keep alarm lifecycle decisions, telemetry calculations, workflow rules, and product-specific navigation in their product/domain layers. Avoid extracting a component solely because two screens look similar; define its data/state contract and verify both products can use it without adopting the same business model.
+
+## LiftIQ–Notifications boundary confirmed in the current prototype
+
+The integrated-alert increment keeps LiftIQ as the source of product-specific alarm meaning and lifecycle, while Notifications owns generic event intake presentation, duplicate/repeat grouping, and evidence-based pattern assessment. The two apps still build independently and duplicate the proposed event type; no shared identity, tenant/member service, authorization middleware, event transport, or delivery service was found in this checkout. LiftIQ's demo tenant and cross-app URL context are navigation hints only. Production work should reuse the authoritative AEP identity and asset-scope services if available, and must resolve tenant/member/recipient permissions server-side rather than introducing another identity hierarchy in Notifications. See the [integration boundary and event-processing decisions](../notifications/EVENT_PROCESSING.md).

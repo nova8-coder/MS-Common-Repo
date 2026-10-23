@@ -21,4 +21,20 @@ export const liftIQMockEvents: LiftIQEvent[] = [
     ],
     detailsUrl: buildLiftIQStationUrl('NOVA_02', 'Alarms'),
   },
+  {
+    // Deterministic at-least-once delivery example; the observation ID is unchanged.
+    eventId: 'liftiq:LC-1042:opened',
+    incidentId: 'LC-1042',
+    eventType: 'liftiq.alarm.wet_well_high_level.v1',
+    tenantId: 'org-city-water',
+    stationId: 'NOVA_02',
+    occurredAt: '2026-10-12T10:04:12',
+    sourceState: 'active',
+    severity: 'high',
+    summary: 'Wet well level reached 70.2 in (threshold: 70 in).',
+    observations: [
+      { eventId: 'e-1042-3', occurredAt: '2026-10-12T11:20:16', summary: 'Pump/wet-well lifecycle repeat envelope replayed.' },
+    ],
+    detailsUrl: buildLiftIQStationUrl('NOVA_02', 'Alarms'),
+  },
 ]
